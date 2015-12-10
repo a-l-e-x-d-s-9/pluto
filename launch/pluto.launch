@@ -42,6 +42,12 @@
     <arg name="Y" value="0.0" />
   </include>
   
+  <node name="movement" pkg="pluto" type="movement.py" args="" respawn="true" />
+  
+  <!--include file="$(find pluto)/nodes/movement.py">   
+    <arg name="name" value="movement"/>
+  </include-->
+  
 <!--
   <include file="$(find ric_gazebo)/launch/spawn_komodo.launch">
   <arg name="name" value="komodo_2"/>
