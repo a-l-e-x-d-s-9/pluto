@@ -160,7 +160,7 @@ def pluto_movement_command_callback( command ):
 if __name__ == '__main__':
     try:
         global movement
-        rospy.init_node("move pluto")
+        rospy.init_node("pluto_movement")
         movement = Movement()
 
         rate = rospy.Rate( movement.SAMPLE_FREQUENCY() )

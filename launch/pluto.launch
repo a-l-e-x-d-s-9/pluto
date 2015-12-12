@@ -12,7 +12,7 @@
   
   <!-- We resume the logic in empty_world.launch -->
   <include file="$(find gazebo_ros)/launch/empty_world.launch">
-   <arg name="world_name" value="$(find pluto)/worlds/area_51.world"/>
+   <arg name="world_name" value="$(find pluto)/worlds/area_find_easy.world"/>
     <arg name="debug" value="$(arg debug)" />
     <arg name="gui" value="$(arg gui)" />
     <arg name="paused" value="$(arg paused)"/>
@@ -43,6 +43,7 @@
   </include>
   
   <node name="movement" pkg="pluto" type="movement.py" args="" respawn="true" />
+  <node name="detector" pkg="pluto" type="detector.py" args="" respawn="true" />
   
   <!--include file="$(find pluto)/nodes/movement.py">   
     <arg name="name" value="movement"/>

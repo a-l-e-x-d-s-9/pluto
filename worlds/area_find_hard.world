@@ -79,60 +79,6 @@
       <elevation>0</elevation>
       <heading_deg>0</heading_deg>
     </spherical_coordinates>
-    <model name='ball_01'>
-      <pose>2 3 0.5 0 -0 0</pose>
-      <link name='link'>
-        <inertial>
-          <mass>1</mass>
-          <inertia>
-            <ixx>1</ixx>
-            <ixy>0</ixy>
-            <ixz>0</ixz>
-            <iyy>1</iyy>
-            <iyz>0</iyz>
-            <izz>1</izz>
-          </inertia>
-        </inertial>
-        <collision name='collision'>
-          <geometry>
-            <sphere>
-              <radius>0.05</radius>
-            </sphere>
-          </geometry>
-          <max_contacts>10</max_contacts>
-          <surface>
-            <bounce/>
-            <friction>
-              <ode/>
-            </friction>
-            <contact>
-              <ode/>
-            </contact>
-          </surface>
-        </collision>
-        <visual name='visual'>
-          <geometry>
-            <sphere>
-              <radius>0.05</radius>
-            </sphere>
-          </geometry>
-          <material>
-            <script>
-              <uri>file://media/materials/scripts/gazebo.material</uri>
-              <name>Gazebo/Grey</name>
-            </script>
-          </material>
-        </visual>
-        <velocity_decay>
-          <linear>0</linear>
-          <angular>0</angular>
-        </velocity_decay>
-        <self_collide>0</self_collide>
-        <kinematic>0</kinematic>
-        <gravity>1</gravity>
-      </link>
-      <static>0</static>
-    </model>
     <model name='ball_02'>
       <pose>3 4 0.5 0 -0 0</pose>
       <link name='link'>
@@ -173,7 +119,7 @@
           <material>
             <script>
               <uri>file://media/materials/scripts/gazebo.material</uri>
-              <name>Gazebo/Grey</name>
+              <name>Gazebo/Yellow</name>
             </script>
           </material>
         </visual>
@@ -188,9 +134,18 @@
       <static>0</static>
     </model>
     <state world_name='default'>
-      <sim_time>182 310000000</sim_time>
-      <real_time>183 153146427</real_time>
-      <wall_time>1449355715 212184607</wall_time>
+      <sim_time>584 870000000</sim_time>
+      <real_time>37 106967522</real_time>
+      <wall_time>1449947426 610726774</wall_time>
+      <model name='ball_02'>
+        <pose>-6.9627 -1.42846 0.05 0 -0 0</pose>
+        <link name='link'>
+          <pose>-6.9627 -1.42846 0.05 0 -0 0</pose>
+          <velocity>0 0 0 0 -0 0</velocity>
+          <acceleration>0 0 0 0 -0 0</acceleration>
+          <wrench>0 0 0 0 -0 0</wrench>
+        </link>
+      </model>
       <model name='ground_plane'>
         <pose>0 0 0 0 -0 0</pose>
         <link name='link'>
@@ -200,28 +155,10 @@
           <wrench>0 0 0 0 -0 0</wrench>
         </link>
       </model>
-      <model name='ball_01'>
-        <pose>2 3 0.05 0 -0 0</pose>
-        <link name='link'>
-          <pose>2 3 0.05 0 -0 0</pose>
-          <velocity>0 0 0 0 -0 0</velocity>
-          <acceleration>0 0 0 0 -0 0</acceleration>
-          <wrench>0 0 0 0 -0 0</wrench>
-        </link>
-      </model>
-      <model name='ball_02'>
-        <pose>3 3 0.05 0 -0 0</pose>
-        <link name='link'>
-          <pose>3 3 0.05 0 -0 0</pose>
-          <velocity>0 0 0 0 -0 0</velocity>
-          <acceleration>0 0 0 0 -0 0</acceleration>
-          <wrench>0 0 0 0 -0 0</wrench>
-        </link>
-      </model>
     </state>
     <gui fullscreen='0'>
       <camera name='user_camera'>
-        <pose>3.78111 -4.35668 0.858474 0 0.275643 2.35619</pose>
+        <pose>4.77384 -5.1685 2.6658 0 0.275643 2.35619</pose>
         <view_controller>orbit</view_controller>
       </camera>
     </gui>
