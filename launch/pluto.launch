@@ -44,8 +44,10 @@
   
   <node name="movement" pkg="pluto" type="movement.py" args="" respawn="true" />
   <node name="detector" pkg="pluto" type="detector.py" args="" respawn="true" />
+  <!--<node name="gripper" pkg="pluto" type="grab.py" args="" respawn="true" />
   
-  <!--include file="$(find pluto)/nodes/movement.py">   
+  
+  include file="$(find pluto)/nodes/movement.py">   
     <arg name="name" value="movement"/>
   </include-->
   
