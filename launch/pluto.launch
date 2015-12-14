@@ -1,8 +1,6 @@
 <!-- -*- mode: XML -*- -->
 <launch>
   
-
-
   <arg name="paused" default="false"/>
   <arg name="use_sim_time" default="true"/>
   <arg name="gui" default="true"/>
@@ -46,11 +44,10 @@
   <node name="detector" pkg="pluto" type="detector.py" args="" respawn="true" />
   <!--<node name="gripper" pkg="pluto" type="grab.py" args="" respawn="true" />
   
-  
   include file="$(find pluto)/nodes/movement.py">   
     <arg name="name" value="movement"/>
   </include-->
-  
+
 <!--
   <include file="$(find ric_gazebo)/launch/spawn_komodo.launch">
   <arg name="name" value="komodo_2"/>
