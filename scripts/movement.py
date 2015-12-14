@@ -36,7 +36,7 @@ class Movement:
     def __init__( self ):
         rospy.loginfo( "Movement innitialized " )
         self.command_api = rospy.Publisher('/komodo_1/diff_driver/command', Twist, queue_size=10)
-        rospy.Subscriber("pluto_movement_command", String, pluto_movement_command_callback)
+        rospy.Subscriber("pluto/movement/command", String, pluto_movement_command_callback)
 
     def move_linear( self, velocity ):
         
@@ -91,6 +91,30 @@ class Movement:
             rospy.loginfo("Movement: unknown command! \"{0}\"".format(self.move_command))
             self.move_stop()
         
+
+
+movement = 0
+
+def pluto_movement_command_callback( command ):
+    global movement
+    movement.move_receive_command( command.data )
+        
+if __name__ == '__main__':
+    try:
+        global movement
+        rospy.init_node("pluto_movement")
+        movement = Movement()
+
+        rate = rospy.Rate( movement.SAMPLE_FREQUENCY() )
+        while not rospy.is_shutdown():
+
+            movement.move()
+
+            rate.sleep()
+        
+    except rospy.ROSInterruptException:
+        pass
+        
 '''
 
 import rospy
@@ -98,6 +122,10 @@ from actionlib import SimpleActionClient, GoalStatus
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 import time
 
+class Movement:
+    counter = 0
+    
+    
     def set_goal( self ):
         #rospy.init_node("simple_navigation_goals")
         # rate = rospy.Rate(10) # 10hz
@@ -107,9 +135,12 @@ import time
         move_base_client = SimpleActionClient('/move_base', MoveBaseAction)
         rospy.loginfo("Connecting to server, {}".format(self.counter) )
         
-        move_base_client.wait_for_server(rospy.Duration(5.0))
+        # rospy.Duration(5.0)
+        move_base_client.wait_for_server()
+        rospy.loginfo("Connected to server, {}".format(self.counter) )
 
         goal = MoveBaseGoal()
+        rospy.loginfo("Create goal, {}".format(self.counter) )
 
         goal.target_pose.header.frame_id = '/komodo_1/base_link'
         goal.target_pose.header.stamp = rospy.Time.now()
@@ -150,25 +181,3 @@ if __name__ == '__main__':
     except rospy.ROSInterruptException:
         pass
 '''
-
-movement = 0
-
-def pluto_movement_command_callback( command ):
-    global movement
-    movement.move_receive_command( command.data )
-        
-if __name__ == '__main__':
-    try:
-        global movement
-        rospy.init_node("pluto_movement")
-        movement = Movement()
-
-        rate = rospy.Rate( movement.SAMPLE_FREQUENCY() )
-        while not rospy.is_shutdown():
-
-            movement.move()
-
-            rate.sleep()
-        
-    except rospy.ROSInterruptException:
-        pass
