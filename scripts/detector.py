@@ -9,6 +9,7 @@ from sensor_msgs.msg import Image
 from std_msgs.msg import String
 from pluto.msg import DetectResult
 
+
 class Detector:
     sample_counter          = 0
     image_listener          = 0
@@ -123,7 +124,7 @@ class Detector:
             process_image = (image_width == self.DETECTOR_IMAGE_WIDTH()) and (image_height == 480)
             
             if True == process_image:
-                is_ball_found, center_coordinates_and_radius = self.find_the_ball( self.image_cv, debug = True )
+                is_ball_found, center_coordinates_and_radius = self.find_the_ball( self.image_cv, debug = False )
                 
                 detect_result.is_ball_detected = is_ball_found
                 
