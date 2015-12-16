@@ -9,7 +9,6 @@ from sensor_msgs.msg import Image
 from std_msgs.msg import String
 from pluto.msg import DetectResult
 
-
 class Detector:
     sample_counter          = 0
     image_listener          = 0
@@ -28,7 +27,7 @@ class Detector:
         return 480
         
     def DETECTOR_DISCRETE_TURN_PIXELS( self ):
-        return 120
+        return 30
 
     def __init__( self ):
         rospy.loginfo( "Detector innitialized " )
@@ -119,7 +118,7 @@ class Detector:
             image_height, image_width = self.image_cv.shape[:2]
             #image_width, image_height = cv2.GetSize(self.image_cv)
             
-            rospy.loginfo( "image_width: {}, image_height: {}".format( image_width, image_height ) )
+            #rospy.loginfo( "image_width: {}, image_height: {}".format( image_width, image_height ) )
             
             process_image = (image_width == self.DETECTOR_IMAGE_WIDTH()) and (image_height == 480)
             
@@ -129,7 +128,12 @@ class Detector:
                 detect_result.is_ball_detected = is_ball_found
                 
                 if True == is_ball_found:
+                    rospy.loginfo( "detect_ball found: x: {}, y: {}, r: {}".format( center_coordinates_and_radius[0], center_coordinates_and_radius[1], center_coordinates_and_radius[2] ) )
+                    
                     detect_result.discrete_turns_needed = self.calculate_turns_needed( center_coordinates_and_radius )
+                    detect_result.detected_x = center_coordinates_and_radius[0]
+                    detect_result.detected_y = center_coordinates_and_radius[1]
+                    detect_result.detected_r = center_coordinates_and_radius[2]
                     
         self.detect_result_publisher.publish( detect_result )
         

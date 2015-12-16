@@ -7,22 +7,23 @@ from pluto.msg import DetectResult
 import time
 
 class Mickey:
-    state                           = 0
-    counter_scans                   = 0
-    counter_approches               = 0
-    counter_wonder_straight         = 0
+    state                               = 0
+    counter_scans                       = 0
+    counter_approches                   = 0
+    counter_wonder_straight             = 0
+    counter_blind_spot_correction       = 0
     
-    counter_scans_limit             = 30
-    counter_approches_limit         = 6
-    counter_wonder_straight_limit   = 10
+    counter_scans_limit                 = 30
+    counter_approches_limit             = 6
+    counter_wonder_straight_limit       = 10
+    counter_blind_spot_correction_limit = 0
     
-    detect_result                   = 0
+    detect_result                       = 0
+    
+    detected_close_to_ball              = False
     
     def RATE( self ):
         return 5
-        
-    def BOOT_TIME_SECONDS( self ):
-        return 20
         
     def STATE_SCAN( self ):
         return 0
@@ -59,6 +60,42 @@ class Mickey:
         
     def STATE_ARM_PICK_CALLBACK( self ):
         return 11
+        
+    def STATE_IN_BLIND_SPOT( self ):
+        return 12
+        
+    def STATE_IN_BLIND_SPOT_CALLBACK( self ):
+        return 13
+        
+    def CORRECTION_TURN_TOLERANCE( self, detected_close_to_ball ):
+        if True == detected_close_to_ball:
+            return 0
+        else:
+            return 1
+            
+    def cooldown_approch( self ):
+        #time.sleep( 1 )
+        pass
+        
+    def cooldown_turn( self ):
+        #time.sleep( 0.1 )
+        pass
+        
+    def cooldown_boot( self ):
+        time.sleep( 20 )
+        
+    def cooldown_correction( self ):
+        #time.sleep( 0.5 )
+        pass
+        
+    def is_in_close_range( self ):
+        # Gazebo mesurments, ball distance to y value in picture:
+        #     4m  : y: 286, r: 2
+        #     3m  : y: 304, r: 2
+        #     2m  : y: 336, r: 4
+        #     1.5m: y: 366, r: 5
+        #     1m  : y: 434, r: 6
+        return self.detect_result.detected_y > 285;
         
     def __init__( self ):
         rospy.loginfo( "Mickey innitialized " )
@@ -106,28 +143,44 @@ class Mickey:
             
             if True == self.detect_result.is_ball_detected:
                 
-                # TODO: Add a termination condition, to start work with arm!
-                
-                if 0 == self.detect_result.discrete_turns_needed:
+                if abs(self.detect_result.discrete_turns_needed) <= self.CORRECTION_TURN_TOLERANCE(self.detected_close_to_ball):
                     
-                    self.state              = self.STATE_APPROACH()
-                    self.counter_approches  = 0
-                    self.main_loop()
+                    self.state                  = self.STATE_APPROACH()
+                    self.counter_approches      = 0
+                    
+                    if False == self.detected_close_to_ball:
+                        self.detected_close_to_ball = self.is_in_close_range()
                     
                 else:
-                    self.state = self.STATE_CORRECT_DIRECTION()
+                    self.state              = self.STATE_CORRECT_DIRECTION()
                     
-                    self.main_loop()
+                if True == self.detected_close_to_ball:
+                    self.counter_approches_limit = 1
+                    rospy.loginfo( "Mickey detected_close_to_ball " )
+                
+                self.main_loop()
                     
             else:
                 
-                self.state = self.STATE_SCAN_TURN_CALLBACK()
+                if True == self.detected_close_to_ball:
+                    
+                    self.state = self.STATE_IN_BLIND_SPOT()
+                    self.counter_blind_spot_correction = 0;
+                    
+                    self.main_loop()
+                    
+                else:
+                    
+                    self.state = self.STATE_SCAN_TURN_CALLBACK()
                 
-                self.move_publisher.publish("RIGHT")
+                    self.move_publisher.publish("RIGHT")
+                    
                 
         elif self.STATE_SCAN_TURN_CALLBACK() == self.state:
             
             rospy.loginfo( "Mickey STATE_SCAN_TURN_CALLBACK " )
+            
+            self.cooldown_turn()
             
             self.state = self.STATE_SCAN()
             
@@ -137,9 +190,11 @@ class Mickey:
             
             rospy.loginfo( "Mickey STATE_CORRECT_DIRECTION " )
             
-            if 0 == self.detect_result.discrete_turns_needed:
+            if abs(self.detect_result.discrete_turns_needed) <= self.CORRECTION_TURN_TOLERANCE(self.detected_close_to_ball):
                 
                 # rospy.loginfo( "Mickey STATE_CORRECT_DIRECTION -> SCAN" )
+                
+                self.cooldown_correction()
                 
                 self.state = self.STATE_SCAN()
                 
@@ -180,6 +235,8 @@ class Mickey:
             
             if self.counter_approches >= self.counter_approches_limit:
                 
+                self.cooldown_approch()
+                
                 self.counter_approches = 0
                 
                 self.state = self.STATE_SCAN()
@@ -209,10 +266,44 @@ class Mickey:
             raise Exception('Unsupported state.')
         elif self.STATE_WONDER_CALLBACK() == self.state:
             raise Exception('Unsupported state.')
+            
         elif self.STATE_ARM_PICK() == self.state:
-            raise Exception('Unsupported state.')
+            
+            rospy.loginfo( "Mickey STATE_ARM_PICK " )
+            # TODO: Add arm related code
+            
+
         elif self.STATE_ARM_PICK_CALLBACK() == self.state:
-            raise Exception('Unsupported state.')
+            
+            rospy.loginfo( "Mickey STATE_ARM_PICK_CALLBACK " )
+            # TODO: Add arm related code
+
+        elif self.STATE_IN_BLIND_SPOT()  == self.state:
+            
+            rospy.loginfo( "Mickey STATE_IN_BLIND_SPOT " )
+
+            if self.counter_blind_spot_correction >= self.counter_blind_spot_correction_limit:
+                
+                self.state = self.STATE_ARM_PICK()
+            
+                self.main_loop()
+                
+            else:
+                
+                self.state = self.STATE_IN_BLIND_SPOT_CALLBACK()
+                
+                self.move_publisher.publish("FORWARD")
+
+        elif self.STATE_IN_BLIND_SPOT_CALLBACK() == self.state:
+            
+            rospy.loginfo( "Mickey STATE_IN_BLIND_SPOT_CALLBACK " )
+            
+            self.counter_blind_spot_correction = self.counter_blind_spot_correction + 1
+            
+            self.state = self.STATE_ARM_PICK()
+            
+            self.main_loop()
+            
         else:
             raise Exception('Unexisting state.')
 
@@ -225,7 +316,7 @@ if __name__ == '__main__':
         
         while not rospy.is_shutdown():
             
-            time.sleep( mickey.BOOT_TIME_SECONDS() )
+            mickey.cooldown_boot()
             mickey.main_loop()
             rospy.spin()
             

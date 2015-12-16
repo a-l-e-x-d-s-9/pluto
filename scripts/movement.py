@@ -120,14 +120,6 @@ class Movement:
         self.move_result_publisher.publish( "move_done" )
         
 
-'''
-movement = 0
-
-def pluto_movement_command_callback( command ):
-    global movement
-    movement.move_receive_command( command.data )
-'''
-
 if __name__ == '__main__':
     try:
         # lobal movement
