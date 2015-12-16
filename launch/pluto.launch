@@ -43,7 +43,13 @@
   <node name="movement" pkg="pluto" type="movement.py" args="" respawn="true" />
   <node name="detector" pkg="pluto" type="detector.py" args="" respawn="true" />
   <node name="mickey"   pkg="pluto" type="mickey.py"   args="" respawn="true" />
+  <!--<node name="gripper" pkg="pluto" type="grab.py" args="" respawn="true" />
+
   
+  include file="$(find pluto)/nodes/movement.py">   
+    <arg name="name" value="movement"/>
+  </include-->
+
 <!--
   <include file="$(find ric_gazebo)/launch/spawn_komodo.launch">
   <arg name="name" value="komodo_2"/>
