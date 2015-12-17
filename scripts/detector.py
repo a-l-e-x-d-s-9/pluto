@@ -70,7 +70,7 @@ class Detector:
         yellow_hue_range_blured = cv2.GaussianBlur(yellow_hue_range, (11, 11), 2, 2);
 
         # http://docs.opencv.org/2.4/modules/imgproc/doc/feature_detection.html?highlight=houghcircles#houghcircles
-        circles = cv2.HoughCircles( yellow_hue_range_blured, cv2.HOUGH_GRADIENT, 1, 20, param1=100,param2=4,minRadius=0,maxRadius=0)
+        circles = cv2.HoughCircles( yellow_hue_range_blured, cv2.cv.CV_HOUGH_GRADIENT, 1, 20, param1=100,param2=4,minRadius=0,maxRadius=0)
         #circles = cv2.HoughCircles( yellow_hue_range_blured, cv2.HOUGH_GRADIENT, 1, image_height/8, param1=100,param2=20,minRadius=0,maxRadius=0);
         #param1=50,param2=30,minRadius=0,maxRadius=0
         #param1=100,param2=20,minRadius=0,maxRadius=0
