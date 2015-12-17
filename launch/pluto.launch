@@ -25,7 +25,7 @@
     
   <include file="$(find ric_gazebo)/launch/spawn_komodo_with_elev.launch">   
     <arg name="name" value="komodo_1"/>
-    <arg name="color" value="White"/>
+    <arg name="color" value="Orange"/>
     <arg name="front_camera" value='true'/>
     <arg name="arm_camera" value='true'/>
     <arg name="depth_camera" value='true'/>
