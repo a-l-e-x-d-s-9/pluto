@@ -80,10 +80,10 @@
       <heading_deg>0</heading_deg>
     </spherical_coordinates>
     <model name='ball_02'>
-      <pose>3 4 0.5 0 -0 0</pose>
+      <pose>3 4 0.033 0 -0 0</pose>
       <link name='link'>
         <inertial>
-          <mass>1</mass>
+          <mass>0.057</mass>
           <inertia>
             <ixx>1</ixx>
             <ixy>0</ixy>
@@ -96,7 +96,7 @@
         <collision name='collision'>
           <geometry>
             <sphere>
-              <radius>0.05</radius>
+              <radius>0.033</radius>
             </sphere>
           </geometry>
           <max_contacts>10</max_contacts>
@@ -113,7 +113,7 @@
         <visual name='visual'>
           <geometry>
             <sphere>
-              <radius>0.05</radius>
+              <radius>0.033</radius>
             </sphere>
           </geometry>
           <material>
@@ -138,9 +138,9 @@
       <real_time>37 106967522</real_time>
       <wall_time>1449947426 610726774</wall_time>
       <model name='ball_02'>
-        <pose>-6.9627 -1.42846 0.05 0 -0 0</pose>
+        <pose>-6.9627 -1.42846 0.033 0 -0 0</pose>
         <link name='link'>
-          <pose>-6.9627 -1.42846 0.05 0 -0 0</pose>
+          <pose>-6.9627 -1.42846 0.033 0 -0 0</pose>
           <velocity>0 0 0 0 -0 0</velocity>
           <acceleration>0 0 0 0 -0 0</acceleration>
           <wrench>0 0 0 0 -0 0</wrench>
