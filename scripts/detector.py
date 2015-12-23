@@ -31,7 +31,7 @@ class Detector:
 
     def __init__( self ):
         rospy.loginfo( "Detector innitialized " )
-        self.image_listener = rospy.Subscriber("/komodo_1/Asus_Camera/rgb/image_raw", Image, self.rgb_listener_cb)
+        self.image_listener = rospy.Subscriber("/Asus_Camera/rgb/image_raw", Image, self.rgb_listener_cb)
         rospy.Subscriber("pluto/detect/command", String, self.detect_ball )
         self.detect_result_publisher = rospy.Publisher('pluto/detect/result', DetectResult, queue_size=10 )
 
@@ -134,7 +134,11 @@ class Detector:
                     detect_result.detected_x = center_coordinates_and_radius[0]
                     detect_result.detected_y = center_coordinates_and_radius[1]
                     detect_result.detected_r = center_coordinates_and_radius[2]
-                    
+                else:
+                    rospy.loginfo( "detect_ball not found")
+        
+        
+        
         self.detect_result_publisher.publish( detect_result )
         
 if __name__ == '__main__':

@@ -42,7 +42,7 @@ class Movement:
         
         self.move_command = self.MOVE_STOP()
 
-        self.command_to_robot = rospy.Publisher('/komodo_1/diff_driver/command', Twist, queue_size=10)
+        self.command_to_robot = rospy.Publisher('/diff_driver/command', Twist, queue_size=10)
         
         rospy.Subscriber("pluto/movement/command", String, self.move )
         self.move_result_publisher = rospy.Publisher('pluto/movement/done', String, queue_size=10 )
