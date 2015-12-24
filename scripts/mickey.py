@@ -68,6 +68,12 @@ class Mickey:
     def STATE_IN_BLIND_SPOT_CALLBACK( self ):
         return 13
         
+    def STATE_INIT_ARM( self ):
+        return 14
+        
+    def STATE_INIT_ARM_CALLBACK( self ):
+        return 15
+        
     def CORRECTION_TURN_TOLERANCE( self, detected_close_to_ball ):
         if True == detected_close_to_ball:
             return 0
@@ -110,7 +116,7 @@ class Mickey:
     def __init__( self ):
         rospy.loginfo( "Mickey innitialized " )
         
-        self.state = self.STATE_SCAN()
+        self.state = self.STATE_INIT_ARM()
 
         self.move_publisher = rospy.Publisher('pluto/movement/command', String, queue_size=10)
         rospy.Subscriber("pluto/movement/done", String, self.move_done )
@@ -140,9 +146,26 @@ class Mickey:
 
     
     def main_loop( self ):
+        
         rospy.loginfo( "Mickey main_loop " )
         
-        if self.STATE_SCAN() == self.state:
+        if self.STATE_INIT_ARM() == self.state:
+            
+            rospy.loginfo( "Mickey STATE_INIT_ARM " )
+            
+            self.state = self.STATE_INIT_ARM_CALLBACK()
+            
+            self.main_loop()
+            
+        elif self.STATE_INIT_ARM_CALLBACK() == self.state:
+            
+            rospy.loginfo( "Mickey STATE_INIT_ARM_CALLBACK " )
+            
+            self.state = self.STATE_SCAN()
+            
+            self.main_loop()
+        
+        elif self.STATE_SCAN() == self.state:
             
             rospy.loginfo( "Mickey STATE_SCAN " )
             
