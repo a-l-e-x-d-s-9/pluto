@@ -10,11 +10,12 @@ from std_msgs.msg import String
 from pluto.msg import DetectResult
 
 class Detector:
-    sample_counter          = 0
-    image_listener          = 0
-    image_cv                = 0
-    active_image_capture    = True
-    detect_result_publisher = 0
+    sample_counter                      = 0
+    top_camera_image_cv                 = 0
+    arm_camera_image_cv                 = 0
+    active_top_camera_image_capture     = True
+    active_arm_camera_image_capture     = True
+    detect_result_publisher             = 0
     
     
     def DETECTOR_RATE( self ):
@@ -26,30 +27,48 @@ class Detector:
     def DETECTOR_IMAGE_HEIGHT( self ):
         return 480
         
-    def DETECTOR_DISCRETE_TURN_PIXELS( self ):
-        return 30
-
     def __init__( self ):
         rospy.loginfo( "Detector innitialized " )
-        self.image_listener = rospy.Subscriber("/Asus_Camera/rgb/image_raw", Image, self.rgb_listener_cb)
+        rospy.Subscriber( "/Asus_Camera/rgb/image_raw",     Image, self.top_camera_listener_cb)
+        rospy.Subscriber( "/Creative_Camera/rgb/image_raw", Image, self.arm_camera_listener_cb)
+        
         rospy.Subscriber("pluto/detect/command", String, self.detect_ball )
         self.detect_result_publisher = rospy.Publisher('pluto/detect/result', DetectResult, queue_size=10 )
 
-    def rgb_listener_cb( self, rgb_image ):
-        if True == self.active_image_capture:
+    def top_camera_listener_cb( self, rgb_image ):
+        if True == self.active_top_camera_image_capture:
             
-            #rospy.loginfo( "rgb_listener_cb, {}".format(self.sample_counter) )
+            #rospy.loginfo( "top_camera_listener_cb, {}".format(self.sample_counter) )
             bridge = cv_bridge.CvBridge()
 
             try:
-                self.image_cv = bridge.imgmsg_to_cv2( rgb_image, "bgr8" )
+                self.top_camera_image_cv = bridge.imgmsg_to_cv2( rgb_image, "bgr8" )
 
             except cv_bridge.CvBridgeError, cv_bridge_except:
                 rospy.logerr("Failed to convert ROS image message to CvMat\n%s", str( cv_bridge_except ))
                 return
             
             #if 10 == self.sample_counter:
-            #    cv2.imshow( "rgb", self.image_cv )
+            #    cv2.imshow( "rgb", self.top_camera_image_cv )
+            #    cv2.waitKey()
+            
+            self.sample_counter = self.sample_counter + 1
+            
+    def arm_camera_listener_cb( self, rgb_image ):
+        if True == self.active_arm_camera_image_capture:
+            
+            #rospy.loginfo( "top_camera_listener_cb, {}".format(self.sample_counter) )
+            bridge = cv_bridge.CvBridge()
+
+            try:
+                self.arm_camera_image_cv = bridge.imgmsg_to_cv2( rgb_image, "bgr8" )
+
+            except cv_bridge.CvBridgeError, cv_bridge_except:
+                rospy.logerr("Failed to convert ROS image message to CvMat\n%s", str( cv_bridge_except ))
+                return
+            
+            #if 10 == self.sample_counter:
+            #    cv2.imshow( "rgb", self.top_camera_image_cv )
             #    cv2.waitKey()
             
             self.sample_counter = self.sample_counter + 1
@@ -98,46 +117,42 @@ class Detector:
             center_coordinates_and_radius = circles[0][0]
             
         return is_ball_found, center_coordinates_and_radius
-        
-        
-    def calculate_turns_needed( self, center_coordinates_and_radius ):
-        (x, y, r) = center_coordinates_and_radius
-        
-        turns = ( x // self.DETECTOR_DISCRETE_TURN_PIXELS() ) - ( self.DETECTOR_IMAGE_WIDTH() // self.DETECTOR_DISCRETE_TURN_PIXELS() // 2 )
-        
-        return turns
 
 
     def detect_ball( self, string_command ):
         
         detect_result = DetectResult()
-        detect_result.is_ball_detected = False
+        detect_result.is_ball_detected  = False
+        detect_result.request_tag       = string_command.data
+        
+        if "scan_top" == detect_result.request_tag:
+            working_image_cv = self.top_camera_image_cv
+        elif "scan_arm" == detect_result.request_tag:
+            working_image_cv = self.arm_camera_image_cv
+        else:
+            raise Exception('Unsupported command to detector, support only: \"scan_top\" or \"scan_arm\".')
         
         if self.sample_counter > 0:
             
-            image_height, image_width = self.image_cv.shape[:2]
-            #image_width, image_height = cv2.GetSize(self.image_cv)
+            image_height, image_width = working_image_cv.shape[:2]
             
             #rospy.loginfo( "image_width: {}, image_height: {}".format( image_width, image_height ) )
             
-            process_image = (image_width == self.DETECTOR_IMAGE_WIDTH()) and (image_height == 480)
+            process_image = ( image_width == self.DETECTOR_IMAGE_WIDTH() ) and ( image_height == self.DETECTOR_IMAGE_HEIGHT() )
             
             if True == process_image:
-                is_ball_found, center_coordinates_and_radius = self.find_the_ball( self.image_cv, debug = False )
+                is_ball_found, center_coordinates_and_radius = self.find_the_ball( working_image_cv, debug = False )
                 
                 detect_result.is_ball_detected = is_ball_found
                 
                 if True == is_ball_found:
                     rospy.loginfo( "detect_ball found: x: {}, y: {}, r: {}".format( center_coordinates_and_radius[0], center_coordinates_and_radius[1], center_coordinates_and_radius[2] ) )
                     
-                    detect_result.discrete_turns_needed = self.calculate_turns_needed( center_coordinates_and_radius )
                     detect_result.detected_x = center_coordinates_and_radius[0]
                     detect_result.detected_y = center_coordinates_and_radius[1]
                     detect_result.detected_r = center_coordinates_and_radius[2]
                 else:
                     rospy.loginfo( "detect_ball not found")
-        
-        
         
         self.detect_result_publisher.publish( detect_result )
         
