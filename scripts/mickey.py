@@ -114,7 +114,7 @@ class Mickey:
         return self.detect_result.detected_y > 285;
         
     def __init__( self ):
-        rospy.loginfo( "Mickey innitialized " )
+        rospy.loginfo( "Mickey initialized " )
         
         self.state = self.STATE_INIT_ARM()
 
@@ -123,6 +123,9 @@ class Mickey:
         
         self.detect_publisher = rospy.Publisher('pluto/detect/command', String, queue_size=10)
         rospy.Subscriber("pluto/detect/result", DetectResult, self.detect_result )
+        
+        self.arm_move_publisher = rospy.Publisher('pluto/move_arm/command', String, queue_size=10)
+        rospy.Subscriber('pluto/move_arm/done', String, self.move_done)
 
 
     def calculate_turns_needed( self, x, y, r ):
@@ -130,8 +133,11 @@ class Mickey:
         return ( x // self.DETECTOR_DISCRETE_TURN_PIXELS() ) - ( self.DETECTOR_IMAGE_WIDTH() // self.DETECTOR_DISCRETE_TURN_PIXELS() // 2 )
         
     def move_done( self, done_message ):
+        done_message_str = done_message.data
+        rospy.loginfo( "Mickey " + done_message_str )
         
-        rospy.loginfo( "Mickey move_done " )
+        if done_message_str == "arm_init_done":
+	    self.state = self.STATE_INIT_ARM_CALLBACK()
         
         self.main_loop()
         
@@ -153,9 +159,10 @@ class Mickey:
             
             rospy.loginfo( "Mickey STATE_INIT_ARM " )
             
-            self.state = self.STATE_INIT_ARM_CALLBACK()
+            self.arm_move_publisher.publish("INIT")
+            #self.state = self.STATE_INIT_ARM_CALLBACK()
             
-            self.main_loop()
+            #self.main_loop()
             
         elif self.STATE_INIT_ARM_CALLBACK() == self.state:
             

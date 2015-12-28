@@ -41,7 +41,7 @@
   </include>
   
 
-
+  <node name="move_arm" pkg="pluto" type="moveArm.py" args="" respawn="true" />
   <node name="movement" pkg="pluto" type="movement.py" args="" respawn="true" />
   <node name="detector" pkg="pluto" type="detector.py" args="" respawn="true" />
   <node name="mickey"   pkg="pluto" type="mickey.py"   args="" respawn="true" />
@@ -74,10 +74,10 @@
   <arg name="Y" value="0.0" />
   </include>
 
-    <include file="$(find komodo_arm_moveit_config)/launch/move_group.launch" />-->
+    <include file="$(find komodo_arm_moveit_config)/launch/move_group.launch" />
   <node name="rviz" output="screen" pkg="rviz" type="rviz" args="-d $(find komodo_2_moveit_config)/config/komodo.rviz"/>
    
-
+-->
   
 	
 </launch>
