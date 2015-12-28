@@ -74,10 +74,10 @@
   <arg name="Y" value="0.0" />
   </include>
 
-    <include file="$(find komodo_arm_moveit_config)/launch/move_group.launch" />
+    <include file="$(find komodo_arm_moveit_config)/launch/move_group.launch" />-->
   <node name="rviz" output="screen" pkg="rviz" type="rviz" args="-d $(find komodo_2_moveit_config)/config/komodo.rviz"/>
    
--->
+
   
 	
 </launch>
