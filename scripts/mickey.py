@@ -12,6 +12,7 @@ class Mickey:
     counter_approches                   = 0
     counter_wonder_straight             = 0
     counter_blind_spot_correction       = 0
+    discrete_turns_needed               = 0
     
     counter_scans_limit                 = 30
     counter_approches_limit             = 6
@@ -67,12 +68,27 @@ class Mickey:
     def STATE_IN_BLIND_SPOT_CALLBACK( self ):
         return 13
         
+    def STATE_INIT_ARM( self ):
+        return 14
+        
+    def STATE_INIT_ARM_CALLBACK( self ):
+        return 15
+        
     def CORRECTION_TURN_TOLERANCE( self, detected_close_to_ball ):
         if True == detected_close_to_ball:
             return 0
         else:
             return 1
             
+    def DETECTOR_IMAGE_WIDTH( self ):
+        return 640
+        
+    def DETECTOR_IMAGE_HEIGHT( self ):
+        return 480
+        
+    def DETECTOR_DISCRETE_TURN_PIXELS( self ):
+        return 30
+        
     def cooldown_approch( self ):
         #time.sleep( 1 )
         pass
@@ -100,7 +116,7 @@ class Mickey:
     def __init__( self ):
         rospy.loginfo( "Mickey innitialized " )
         
-        self.state = self.STATE_SCAN()
+        self.state = self.STATE_INIT_ARM()
 
         self.move_publisher = rospy.Publisher('pluto/movement/command', String, queue_size=10)
         rospy.Subscriber("pluto/movement/done", String, self.move_done )
@@ -108,6 +124,11 @@ class Mickey:
         self.detect_publisher = rospy.Publisher('pluto/detect/command', String, queue_size=10)
         rospy.Subscriber("pluto/detect/result", DetectResult, self.detect_result )
 
+
+    def calculate_turns_needed( self, x, y, r ):
+
+        return ( x // self.DETECTOR_DISCRETE_TURN_PIXELS() ) - ( self.DETECTOR_IMAGE_WIDTH() // self.DETECTOR_DISCRETE_TURN_PIXELS() // 2 )
+        
     def move_done( self, done_message ):
         
         rospy.loginfo( "Mickey move_done " )
@@ -116,23 +137,41 @@ class Mickey:
         
     def detect_result( self, detect_result ):
         
-        rospy.loginfo( "Mickey detect_result " )
-        
-        self.detect_result = detect_result
-        
-        self.main_loop()
+        if "scan_top" == detect_result.request_tag :
+            rospy.loginfo( "Mickey detect_result " )
+            
+            self.detect_result = detect_result
+            
+            self.main_loop()
 
     
     def main_loop( self ):
+        
         rospy.loginfo( "Mickey main_loop " )
         
-        if self.STATE_SCAN() == self.state:
+        if self.STATE_INIT_ARM() == self.state:
+            
+            rospy.loginfo( "Mickey STATE_INIT_ARM " )
+            
+            self.state = self.STATE_INIT_ARM_CALLBACK()
+            
+            self.main_loop()
+            
+        elif self.STATE_INIT_ARM_CALLBACK() == self.state:
+            
+            rospy.loginfo( "Mickey STATE_INIT_ARM_CALLBACK " )
+            
+            self.state = self.STATE_SCAN()
+            
+            self.main_loop()
+        
+        elif self.STATE_SCAN() == self.state:
             
             rospy.loginfo( "Mickey STATE_SCAN " )
             
             self.state = self.STATE_SCAN_DETECT_CALLBACK()
             
-            self.detect_publisher.publish("please_scan")
+            self.detect_publisher.publish("scan_top")
 
 
         elif self.STATE_SCAN_DETECT_CALLBACK() == self.state:
@@ -143,7 +182,9 @@ class Mickey:
             
             if True == self.detect_result.is_ball_detected:
                 
-                if abs(self.detect_result.discrete_turns_needed) <= self.CORRECTION_TURN_TOLERANCE(self.detected_close_to_ball):
+                self.discrete_turns_needed = self.calculate_turns_needed( self.detect_result.detected_x, self.detect_result.detected_y, self.detect_result.detected_r )
+                
+                if abs( self.discrete_turns_needed ) <= self.CORRECTION_TURN_TOLERANCE( self.detected_close_to_ball ):
                     
                     self.state                  = self.STATE_APPROACH()
                     self.counter_approches      = 0
@@ -190,7 +231,7 @@ class Mickey:
             
             rospy.loginfo( "Mickey STATE_CORRECT_DIRECTION " )
             
-            if abs(self.detect_result.discrete_turns_needed) <= self.CORRECTION_TURN_TOLERANCE(self.detected_close_to_ball):
+            if abs(self.discrete_turns_needed) <= self.CORRECTION_TURN_TOLERANCE(self.detected_close_to_ball):
                 
                 # rospy.loginfo( "Mickey STATE_CORRECT_DIRECTION -> SCAN" )
                 
@@ -204,19 +245,19 @@ class Mickey:
                 
                 self.state = self.STATE_CORRECT_DIRECTION_CALLBACK()
                 
-                if 0 < self.detect_result.discrete_turns_needed:
+                if 0 < self.discrete_turns_needed:
                     
-                    # rospy.loginfo( "Mickey STATE_CORRECT_DIRECTION -> RIGHT {}".format(self.detect_result.discrete_turns_needed) )
+                    # rospy.loginfo( "Mickey STATE_CORRECT_DIRECTION -> RIGHT {}".format(self.discrete_turns_needed) )
                     
-                    self.detect_result.discrete_turns_needed = self.detect_result.discrete_turns_needed - 1
+                    self.discrete_turns_needed = self.discrete_turns_needed - 1
                     
                     self.move_publisher.publish("RIGHT")
                     
                 else:
                     
-                    # rospy.loginfo( "Mickey STATE_CORRECT_DIRECTION -> LEFT {}".format(self.detect_result.discrete_turns_needed) )
+                    # rospy.loginfo( "Mickey STATE_CORRECT_DIRECTION -> LEFT {}".format(self.discrete_turns_needed) )
                     
-                    self.detect_result.discrete_turns_needed = self.detect_result.discrete_turns_needed + 1
+                    self.discrete_turns_needed = self.discrete_turns_needed + 1
                     
                     self.move_publisher.publish("LEFT")
                 
