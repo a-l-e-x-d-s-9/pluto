@@ -2,7 +2,7 @@
 
 import roslib
 import rospy
-from std_msgs.msg import String
+from std_msgs.msg import String, Bool
 from pluto.msg import DetectResult
 import time
 from pluto_common import *
@@ -23,6 +23,9 @@ class Mickey:
     detect_result                       = 0
     
     detected_close_to_ball              = False
+    
+    emergency_stop                      = False
+    emergency_stop_enforced             = False
     
     def RATE( self ):
         return 5
@@ -138,7 +141,16 @@ class Mickey:
         
         self.arm_move_publisher = rospy.Publisher('pluto/move_arm/command', String, queue_size=10)
         rospy.Subscriber('pluto/move_arm/done', String, self.move_done)
+        
+        rospy.Subscriber( "pluto/emergency_stop", Bool, self.emergency_stop_cb)
+        self.emergency_stop_publisher = rospy.Publisher('pluto/emergency_stop', Bool, queue_size=10)
+        self.emergency_stop_publisher.publish( self.emergency_stop )
 
+    def emergency_stop_cb( self, emergency_stop ):
+        self.emergency_stop = emergency_stop.data
+        
+        if ( False == self.emergency_stop ) and ( True == self.emergency_stop_enforced ):
+            self.main_loop()
 
     def calculate_turns_needed( self, x, y, r ):
 
@@ -166,6 +178,10 @@ class Mickey:
     def main_loop( self ):
         
         rospy.loginfo( "Mickey main_loop " )
+        
+        if True == self.emergency_stop:
+            self.emergency_stop_enforced = True
+            return
         
         if self.STATE_INIT_ARM() == self.state:
             

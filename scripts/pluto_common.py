@@ -10,8 +10,8 @@ def init_arguments( self ):
 
     self.is_simulation = options.is_simulation
 
-def pluto_add_namespace( self, topic ):
-    if True == self.is_simulation:
+def pluto_add_namespace( is_simulation, topic ):
+    if True == is_simulation:
         return topic
     else:
         return "/komodo_1/komodo_1" + topic

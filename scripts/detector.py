@@ -18,7 +18,8 @@ class Detector:
     active_arm_camera_image_capture     = True
     detect_result_publisher             = 0
     is_simulation                       = False
-    
+    request_tag                         = ""
+    request_pending                     = False
     
     def DETECTOR_RATE( self ):
         return 5
@@ -55,11 +56,12 @@ class Detector:
         
         init_arguments( self )
         
-        rospy.Subscriber( pluto_add_namespace( self, "/Asus_Camera/rgb/image_raw"     ), Image, self.top_camera_listener_cb)
-        rospy.Subscriber( pluto_add_namespace( self, "/Creative_Camera/rgb/image_raw" ), Image, self.arm_camera_listener_cb)
+        rospy.Subscriber( pluto_add_namespace( self.is_simulation, "/Asus_Camera/rgb/image_raw"     ), Image, self.top_camera_listener_cb)
+        rospy.Subscriber( pluto_add_namespace( self.is_simulation, "/Creative_Camera/rgb/image_raw" ), Image, self.arm_camera_listener_cb)
         
-        rospy.Subscriber("pluto/detect/command", String, self.detect_ball )
+        rospy.Subscriber("pluto/detect/command", String, self.get_ready_detect_ball )
         self.detect_result_publisher = rospy.Publisher('pluto/detect/result', DetectResult, queue_size=10 )
+        
 
     def top_camera_listener_cb( self, rgb_image ):
         if True == self.active_top_camera_image_capture:
@@ -80,6 +82,10 @@ class Detector:
             
             self.sample_counter = self.sample_counter + 1
             
+            if (True == self.request_pending) and ("scan_top" == self.request_tag):
+                self.request_pending = False
+                self.detect_ball()
+            
     def arm_camera_listener_cb( self, rgb_image ):
         if True == self.active_arm_camera_image_capture:
             
@@ -98,6 +104,10 @@ class Detector:
             #    cv2.waitKey()
             
             self.sample_counter = self.sample_counter + 1
+            
+            if (True == self.request_pending) and ("scan_arm" == self.request_tag):
+                self.request_pending = False
+                self.detect_ball()
 
     def find_the_ball( self, image_cv, min_radius = 2, max_radius = 100, canny_higher_threshold = 100, canny_accumulator_threshold = 4, debug = False ):
         # return: 
@@ -187,13 +197,15 @@ class Detector:
             
         return is_ball_found, center_coordinates_and_radius
 
+    def get_ready_detect_ball( self, string_command ):
+        self.request_tag        = string_command.data
+        self.request_pending    = True
 
-    def detect_ball( self, string_command ):
+    def detect_ball( self ):
         
         detect_result = DetectResult()
         detect_result.is_ball_detected  = False
-        detect_result.request_tag       = string_command.data
-        self.request_tag                = string_command.data
+        detect_result.request_tag       = self.request_tag
         
         if "scan_top" == detect_result.request_tag:
             working_image_cv = self.top_camera_image_cv

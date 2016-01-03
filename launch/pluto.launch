@@ -1,7 +1,7 @@
 <!-- -*- mode: XML -*- -->
 <launch>
     <group ns="komodo_1">
-		<include file="$(find komodo_arm_moveit_config)/launch/move_group.launch"/>
+		<include file="$(find ric_board)/launch/komodo_bgu.launch"/>
     </group>
 
     <node name="move_arm" pkg="pluto" type="moveArm.py"  args="" respawn="true" />
