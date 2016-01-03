@@ -182,13 +182,7 @@ class Detector:
                 cv2.waitKey()
                 
             center_coordinates_and_radius = max_circle
-            
-        else:
-            cv2.imshow( "red_hue_image", red_hue_image )
-            cv2.waitKey()
-            
-            cv2.imshow( "image", image_cv )
-            cv2.waitKey()
+
             
             
         return is_ball_found, center_coordinates_and_radius
