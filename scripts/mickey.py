@@ -5,6 +5,7 @@ import rospy
 from std_msgs.msg import String
 from pluto.msg import DetectResult
 import time
+from pluto_common import *
 
 class Mickey:
     state                               = 0
@@ -105,16 +106,27 @@ class Mickey:
         pass
         
     def is_in_close_range( self ):
-        # Gazebo mesurments, ball distance to y value in picture:
-        #     4m  : y: 286, r: 2
-        #     3m  : y: 304, r: 2
-        #     2m  : y: 336, r: 4
-        #     1.5m: y: 366, r: 5
-        #     1m  : y: 434, r: 6
-        return self.detect_result.detected_y > 285;
+
+        if True == self.is_simulation:
+            # Gazebo mesurments, ball distance to y value in picture:
+            #     4m  : y: 286, r: 2
+            #     3m  : y: 304, r: 2
+            #     2m  : y: 336, r: 4
+            #     1.5m: y: 366, r: 5
+            #     1m  : y: 434, r: 6
+            return self.detect_result.detected_y > 285;
+        else:
+            # Real robot, when camera most down
+            #     4m  : y: 310
+            #     3m  : y: 346
+            #     2m  : y: 416
+            return self.detect_result.detected_y > 346;
+        
         
     def __init__( self ):
         rospy.loginfo( "Mickey initialized " )
+        
+        init_arguments( self )
         
         self.state = self.STATE_INIT_ARM()
 

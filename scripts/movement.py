@@ -4,6 +4,7 @@ import rospy
 from std_msgs.msg import String
 from geometry_msgs.msg import Twist
 import time
+from pluto_common import *
 
 class Movement:
     counter          = 1
@@ -29,10 +30,10 @@ class Movement:
         return "STOP"
         
     def SPEED_LINEAR( self ):
-        return 0.5
+        return 0.2
         
     def SPEED_ANGULAR( self ):
-        return 0.5
+        return 0.2
         
     def MOVE_TIME_SECONDS( self ):
         return 0.6
@@ -40,9 +41,11 @@ class Movement:
     def __init__( self ):
         rospy.loginfo( "Movement innitialized " )
         
+        init_arguments( self )
+        
         self.move_command = self.MOVE_STOP()
-
-        self.command_to_robot = rospy.Publisher('/diff_driver/command', Twist, queue_size=10)
+        
+        self.command_to_robot = rospy.Publisher( pluto_add_namespace( self, '/diff_driver/command' ), Twist, queue_size=10)
         
         rospy.Subscriber("pluto/movement/command", String, self.move )
         self.move_result_publisher = rospy.Publisher('pluto/movement/done', String, queue_size=10 )

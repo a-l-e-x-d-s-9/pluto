@@ -119,7 +119,7 @@
           <material>
             <script>
               <uri>file://media/materials/scripts/gazebo.material</uri>
-              <name>Gazebo/Yellow</name>
+              <name>Gazebo/Red</name>
             </script>
           </material>
         </visual>
@@ -138,9 +138,9 @@
       <real_time>37 106967522</real_time>
       <wall_time>1449947426 610726774</wall_time>
       <model name='ball_02'>
-        <pose>-6.9627 -1.42846 0.033 0 -0 0</pose>
+        <pose>-4.9627 -1.42846 0.033 0 -0 0</pose>
         <link name='link'>
-          <pose>-6.9627 -1.42846 0.033 0 -0 0</pose>
+          <pose>-4.9627 -1.42846 0.033 0 -0 0</pose>
           <velocity>0 0 0 0 -0 0</velocity>
           <acceleration>0 0 0 0 -0 0</acceleration>
           <wrench>0 0 0 0 -0 0</wrench>

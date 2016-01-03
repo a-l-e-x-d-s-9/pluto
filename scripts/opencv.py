@@ -4,7 +4,7 @@ import cv2
 import numpy as np
 
 
-def find_the_ball( image_cv, debug = False ):
+def find_the_ball( image_cv, min_radius = 2, max_radius = 100, canny_higher_threshold = 100, canny_accumulator_threshold = 4, debug = False ):
     # return: 
     #           1) is_ball_found - boolean 
     #           2) center_coordinates_and_radius - tuple (x,y,r)
@@ -14,44 +14,85 @@ def find_the_ball( image_cv, debug = False ):
 
     hsv_image = cv2.cvtColor( image_cv, cv2.COLOR_BGR2HSV );
 
-    # 25 to 90 is approximated H values for yellow, 85 to 255 is S and V values we use
-    yellow_hue_range = cv2.inRange( hsv_image, (25, 85, 85), (90, 255, 255) )
+    red_hue_range_lower = cv2.inRange( hsv_image, (0, 100, 100), (10, 255, 255) )
+    red_hue_range_upper = cv2.inRange( hsv_image, (160, 100, 100), (179, 255, 255) )
 
-    yellow_hue_range_blured = cv2.GaussianBlur(yellow_hue_range, (11, 11), 2, 2);
+    red_hue_image = cv2.addWeighted( red_hue_range_lower, 1.0, red_hue_range_upper, 1.0, 0.0 );
+    
+    if True == debug:
+        cv2.imshow( "red_hue_image", red_hue_image )
+        cv2.waitKey()
+    
+    red_hue_range_blured = cv2.GaussianBlur(red_hue_image, (11, 11), 2, 2);
+    
+    print( image_height/8, canny_higher_threshold, canny_accumulator_threshold, min_radius, max_radius )
 
     # http://docs.opencv.org/2.4/modules/imgproc/doc/feature_detection.html?highlight=houghcircles#houghcircles
-    circles = cv2.HoughCircles( yellow_hue_range_blured, cv2.HOUGH_GRADIENT, 1, 20, param1=100,param2=4,minRadius=0,maxRadius=0)
-    #circles = cv2.HoughCircles( yellow_hue_range_blured, cv2.HOUGH_GRADIENT, 1, image_height/8, param1=100,param2=20,minRadius=0,maxRadius=0);
-    #param1=50,param2=30,minRadius=0,maxRadius=0
-    #param1=100,param2=20,minRadius=0,maxRadius=0
+    '''
+    HoughCircles
+        Finds circles in a grayscale image using the Hough transform.
+        The function finds circles in a grayscale image using a modification of the Hough transform.
+        
+    Note: Usually the function detects the centers of circles well. 
+        However, it may fail to find correct radii. You can assist to the 
+        function by specifying the radius range ( minRadius and 
+        maxRadius ) if you know it. Or, you may ignore the returned 
+        radius, use only the center, and find the correct radius using an 
+        additional procedure.
+        
+    Python: cv2.HoughCircles(image, method, dp, minDist[, circles[, param1[, param2[, minRadius[, maxRadius]]]]]) -> circles
+    
+    Parameters:	
+        image - 8-bit, single-channel, grayscale input image.
+        circles - Output vector of found circles. Each vector is encoded as a 3-element floating-point vector  (x, y, radius) .
+        circle_storage - In C function this is a memory storage that will contain the output sequence of found circles.
+        method - Detection method to use. Currently, the only implemented method is CV_HOUGH_GRADIENT , which is basically 21HT , described in [Yuen90].
+        dp - Inverse ratio of the accumulator resolution to the image resolution. For example, if dp=1 , the accumulator has the same resolution as the input image. If dp=2 , the accumulator has half as big width and height.
+        minDist - Minimum distance between the centers of the detected circles. If the parameter is too small, multiple neighbor circles may be falsely detected in addition to a true one. If it is too large, some circles may be missed.
+        param1 - First method-specific parameter. In case of CV_HOUGH_GRADIENT , it is the higher threshold of the two passed to the Canny() edge detector (the lower one is twice smaller).
+        param2 - Second method-specific parameter. In case of CV_HOUGH_GRADIENT , it is the accumulator threshold for the circle centers at the detection stage. The smaller it is, the more false circles may be detected. Circles, corresponding to the larger accumulator values, will be returned first.
+        minRadius - Minimum circle radius.
+        maxRadius - Maximum circle radius.
+    '''
+    
+    circles = cv2.HoughCircles( red_hue_range_blured, cv2.cv.CV_HOUGH_GRADIENT, 1, image_height/8, param1=canny_higher_threshold,param2=canny_accumulator_threshold,minRadius=min_radius,maxRadius=max_radius)
 
-    if True == debug:
-        cv2.imshow( "lower_yellow_hue_range", yellow_hue_range_blured )
-        cv2.waitKey()
+
+    #if True == debug:
+    #    cv2.imshow( "red_hue_range_blured", red_hue_range_blured )
+    #    cv2.waitKey()
 
     is_ball_found                   = circles is not None
     center_coordinates_and_radius   = (0, 0, 0) 
 
     if True == is_ball_found:
-        circles = np.uint16(np.around(circles))
+        circles     = np.uint16(np.around(circles))
+        max_r       = 0
+        max_circle  = circles[0][0] 
         
-        if True == debug:
-            for i in circles[0,:]:
-                # draw the outer circle
-                cv2.circle(image_cv,(i[0],i[1]),i[2],(0,255,0),2)
-                # draw the center of the circle
-                cv2.circle(image_cv,(i[0],i[1]),2,(0,0,255),3)
+        for circle in circles[0,:]:
+            if circle[2] > max_r:
+                max_r       = circle[2]
+                max_circle  = circle
+        
+        print max_circle
 
-            cv2.imshow( "lower_yellow_hue_range", image_cv )
+        if True == debug:
+            # draw the outer circle
+            cv2.circle(image_cv,(max_circle[0],max_circle[1]),max_circle[2],(0,255,0),2)
+            # draw the center of the circle
+            cv2.circle(image_cv,(max_circle[0],max_circle[1]),2,(0,0,255),3)
+        
+            cv2.imshow( "detected ball", image_cv )
             cv2.waitKey()
             
-        center_coordinates_and_radius = circles[0][0]
+        center_coordinates_and_radius = max_circle
         
     return is_ball_found, center_coordinates_and_radius
         
 
-bgr_image = cv2.imread('/home/alexds9/catkin_ws/src/pluto/scripts/image.png',1)
-is_ball_found, center_coordinates_and_radius = find_the_ball( bgr_image, debug = True )
+bgr_image = cv2.imread('/home/alexds9/image_g1.png',1)
+is_ball_found, center_coordinates_and_radius = find_the_ball( bgr_image, min_radius = 1, max_radius = 100, canny_higher_threshold = 100, canny_accumulator_threshold = 4, debug = True )
 
 print is_ball_found
 print center_coordinates_and_radius
