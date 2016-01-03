@@ -25,8 +25,8 @@ class MoveArm:
 
 	  #self.command_to_robot = rospy.Publisher('/diff_driver/command', Twist, queue_size=10)
 	  
-	  rospy.Subscriber("pluto/move_arm/command", String, self.move_arm )
-	  self.move_result_publisher = rospy.Publisher('pluto/move_arm/done', String, queue_size=10)
+	  rospy.Subscriber("/pluto/move_arm/command", String, self.move_arm )
+	  self.move_result_publisher = rospy.Publisher('/pluto/move_arm/done', String, queue_size=10)
     
     def move_arm( self, command):
 	  self.move_command = command.data

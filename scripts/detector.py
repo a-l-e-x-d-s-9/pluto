@@ -59,8 +59,8 @@ class Detector:
         rospy.Subscriber( pluto_add_namespace( self.is_simulation, "/Asus_Camera/rgb/image_raw"     ), Image, self.top_camera_listener_cb)
         rospy.Subscriber( pluto_add_namespace( self.is_simulation, "/Creative_Camera/rgb/image_raw" ), Image, self.arm_camera_listener_cb)
         
-        rospy.Subscriber("pluto/detect/command", String, self.get_ready_detect_ball )
-        self.detect_result_publisher = rospy.Publisher('pluto/detect/result', DetectResult, queue_size=10 )
+        rospy.Subscriber("/pluto/detect/command", String, self.get_ready_detect_ball )
+        self.detect_result_publisher = rospy.Publisher('/pluto/detect/result', DetectResult, queue_size=10 )
         
 
     def top_camera_listener_cb( self, rgb_image ):

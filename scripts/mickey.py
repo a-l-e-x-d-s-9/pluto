@@ -133,17 +133,17 @@ class Mickey:
         
         self.state = self.STATE_INIT_ARM()
 
-        self.move_publisher = rospy.Publisher('pluto/movement/command', String, queue_size=10)
-        rospy.Subscriber("pluto/movement/done", String, self.move_done )
+        self.move_publisher = rospy.Publisher('/pluto/movement/command', String, queue_size=10)
+        rospy.Subscriber("/pluto/movement/done", String, self.move_done )
         
-        self.detect_publisher = rospy.Publisher('pluto/detect/command', String, queue_size=10)
-        rospy.Subscriber("pluto/detect/result", DetectResult, self.detect_result )
+        self.detect_publisher = rospy.Publisher('/pluto/detect/command', String, queue_size=10)
+        rospy.Subscriber("/pluto/detect/result", DetectResult, self.detect_result )
         
-        self.arm_move_publisher = rospy.Publisher('pluto/move_arm/command', String, queue_size=10)
-        rospy.Subscriber('pluto/move_arm/done', String, self.move_done)
+        self.arm_move_publisher = rospy.Publisher('/pluto/move_arm/command', String, queue_size=10)
+        rospy.Subscriber('/pluto/move_arm/done', String, self.move_done)
         
-        rospy.Subscriber( "pluto/emergency_stop", Bool, self.emergency_stop_cb)
-        self.emergency_stop_publisher = rospy.Publisher('pluto/emergency_stop', Bool, queue_size=10)
+        rospy.Subscriber( "/pluto/emergency_stop", Bool, self.emergency_stop_cb)
+        self.emergency_stop_publisher = rospy.Publisher('/pluto/emergency_stop', Bool, queue_size=10)
         self.emergency_stop_publisher.publish( self.emergency_stop )
 
     def emergency_stop_cb( self, emergency_stop ):

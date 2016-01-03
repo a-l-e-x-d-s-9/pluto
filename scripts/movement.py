@@ -47,8 +47,8 @@ class Movement:
         
         self.command_to_robot = rospy.Publisher( pluto_add_namespace( self.is_simulation, '/diff_driver/command' ), Twist, queue_size=10)
         
-        rospy.Subscriber("pluto/movement/command", String, self.move )
-        self.move_result_publisher = rospy.Publisher('pluto/movement/done', String, queue_size=10 )
+        rospy.Subscriber("/pluto/movement/command", String, self.move )
+        self.move_result_publisher = rospy.Publisher('/pluto/movement/done', String, queue_size=10 )
 
     def move_linear( self, velocity ):
         
