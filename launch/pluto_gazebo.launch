@@ -41,10 +41,10 @@
   </include>
   
 
-  <node name="move_arm" pkg="pluto" type="moveArm.py"  args="--is_simulation" respawn="true" />
+  <node name="move_arm" pkg="pluto" type="moveArm.py"  args="--is_simulation" respawn="true" /> 
   <node name="movement" pkg="pluto" type="movement.py" args="--is_simulation" respawn="true" />
   <node name="detector" pkg="pluto" type="detector.py" args="--is_simulation" respawn="true" />
-  <node name="mickey"   pkg="pluto" type="mickey.py"   args="--is_simulation" respawn="true" />
+  <node name="mickey"   pkg="pluto" type="mickey.py"   args="--is_simulation" respawn="true" /> 
   
   
   <include file="$(find komodo_arm_moveit_config)/launch/move_group.launch" />
