@@ -17,7 +17,8 @@ class Movement:
     base_value_y        = 0
     base_value_angle    = 0
     odometry_last       = 0
-    moving             = False
+    moving              = False
+    move_robot_command  = 0
     
 
     def SAMPLE_FREQUENCY( self ):
@@ -48,23 +49,24 @@ class Movement:
         if True == self.is_simulation:
             return 0.5
         else:
-            return 0.7
-        
-    def MOVE_TIME_SECONDS( self ):
-        return 0.6
+            return 0.85
         
     def EPSILON_ANGULAR( self ):
-        angle = 20.0
-        return 2.0 / 360.0 * angle
+        return 5.0
         
     def EPSILON_LINEAR( self ):
-        distance_cm = 20.0
-        return distance_cm / 100.0
+        desired_distance_move_cm = 5.0
+        
+        if True == self.is_simulation:
+            desired_distance_move_cm = 5.0
+        else:
+            desired_distance_move_cm = 10.0
+            
+        distance_to_move_meter = desired_distance_move_cm / 100.0
+        return distance_to_move_meter
         
     def calculate_linear_offset( self, p1, p2 ):
-        # p1.pose.pose.orientation.w
-        # p1.pose.pose.position.x
-        # p1.pose.pose.position.y
+        
         [x1, y1] = p1
         [x2, y2] = p2
         
@@ -72,15 +74,17 @@ class Movement:
         
     def calculate_angular_offset( self, a1, a2 ):
         if a1 > a2:
-            return a1 - a2
+            b = a1 - a2
         else:
-            return a2 - a1
+            b = a2 - a1
+        
+        if b > 180.0:
+            b = 360.0 - b
+            
+        return b
         
         
     def odometry_get_angle( self, odometry ):
-        # p1.pose.pose.orientation.w
-        # p1.pose.pose.position.x
-        # p1.pose.pose.position.y
         
         q = odometry.pose.pose.orientation
         roll, pitch, yaw = euler_from_quaternion( [q.w, q.x, q.y, q.z] )
@@ -98,6 +102,8 @@ class Movement:
         
         init_arguments( self )
         
+        self.move_robot_command = Twist()
+        
         self.move_command = self.MOVE_STOP()
         
         self.command_to_robot = rospy.Publisher( pluto_add_namespace( self.is_simulation, '/diff_driver/command' ), Twist, queue_size=10)
@@ -111,10 +117,13 @@ class Movement:
         self.odometry_last = odometry
         
         if True == self.moving:
+            self.command_to_robot.publish( self.move_robot_command )
+    
             if ( self.MOVE_LEFT() == self.move_command ) or ( self.MOVE_RIGHT() == self.move_command ):
 
                 last_value_angle     = self.odometry_get_angle( self.odometry_last ) 
                 if self.calculate_angular_offset( last_value_angle, self.base_value_angle ) >= self.EPSILON_ANGULAR():
+                    rospy.loginfo("Movement: 1, offset {}, epsilon {}".format(self.calculate_angular_offset( last_value_angle, self.base_value_angle ), self.EPSILON_ANGULAR()))
                     self.move( String( self.MOVE_STOP() ) )
                 
             elif ( self.MOVE_FORWARD() == self.move_command ) or ( self.MOVE_BACKWARD() == self.move_command ):
@@ -122,34 +131,31 @@ class Movement:
                 last_value_x         = self.odometry_get_x( self.odometry_last )
                 last_value_y         = self.odometry_get_y( self.odometry_last )
                 if self.calculate_linear_offset( [last_value_x, last_value_y], [self.base_value_x, self.base_value_y] ) >= self.EPSILON_LINEAR():
+                    rospy.loginfo("Movement: 2, offset {}, epsilon {}".format(self.calculate_linear_offset( [last_value_x, last_value_y], [self.base_value_x, self.base_value_y] ), self.EPSILON_LINEAR()))
                     self.move( String( self.MOVE_STOP() ) )
         
 
     def move_linear( self, velocity ):
         
-        move_robot_command = Twist()
-
-        move_robot_command.linear.x     = velocity
-        move_robot_command.linear.y     = 0
-        move_robot_command.linear.z     = 0
-        move_robot_command.angular.x    = 0
-        move_robot_command.angular.y    = 0
-        move_robot_command.angular.z    = 0
+        self.move_robot_command.linear.x     = velocity
+        self.move_robot_command.linear.y     = 0
+        self.move_robot_command.linear.z     = 0
+        self.move_robot_command.angular.x    = 0
+        self.move_robot_command.angular.y    = 0
+        self.move_robot_command.angular.z    = 0
         
-        self.command_to_robot.publish(move_robot_command)
+        self.command_to_robot.publish( self.move_robot_command )
         
     def move_turn( self, velocity ):
         
-        move_robot_command = Twist()
-
-        move_robot_command.linear.x     = 0
-        move_robot_command.linear.y     = 0
-        move_robot_command.linear.z     = 0
-        move_robot_command.angular.x    = 0
-        move_robot_command.angular.y    = 0
-        move_robot_command.angular.z    = velocity
+        self.move_robot_command.linear.x     = 0
+        self.move_robot_command.linear.y     = 0
+        self.move_robot_command.linear.z     = 0
+        self.move_robot_command.angular.x    = 0
+        self.move_robot_command.angular.y    = 0
+        self.move_robot_command.angular.z    = velocity
         
-        self.command_to_robot.publish(move_robot_command)
+        self.command_to_robot.publish( self.move_robot_command )
         
     def move_stop( self ):
         move_robot_command = Twist()
@@ -166,6 +172,8 @@ class Movement:
         self.base_value_x         = self.odometry_get_x( self.odometry_last )
         self.base_value_y         = self.odometry_get_y( self.odometry_last )
         self.base_value_angle     = self.odometry_get_angle( self.odometry_last ) 
+        
+        rospy.loginfo( "Movement: x: {}, y: {}, a: {}".format( self.base_value_x, self.base_value_y, self.base_value_angle ) )
         
         if      self.MOVE_LEFT()      == self.move_command:
             rospy.loginfo("Movement: LEFT")

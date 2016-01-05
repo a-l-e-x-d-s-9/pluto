@@ -16,7 +16,7 @@ class Mickey:
     discrete_turns_needed               = 0
     
     counter_scans_limit                 = 30
-    counter_approches_limit             = 6
+    counter_approches_limit             = 3
     counter_wonder_straight_limit       = 10
     counter_blind_spot_correction_limit = 0
     
@@ -24,8 +24,9 @@ class Mickey:
     
     detected_close_to_ball              = False
     
-    emergency_stop                      = False
+    emergency_stop                      = True
     emergency_stop_enforced             = False
+    is_using_top_camera                 = True
     
     def RATE( self ):
         return 5
@@ -82,7 +83,7 @@ class Mickey:
         if True == detected_close_to_ball:
             return 0
         else:
-            return 1
+            return 0
             
     def DETECTOR_IMAGE_WIDTH( self ):
         return 640
@@ -91,7 +92,7 @@ class Mickey:
         return 480
         
     def DETECTOR_DISCRETE_TURN_PIXELS( self ):
-        return 30
+        return 80
         
     def cooldown_approch( self ):
         #time.sleep( 1 )
@@ -120,18 +121,21 @@ class Mickey:
             return self.detect_result.detected_y > 285;
         else:
             # Real robot, when camera most down
-            #     4m  : y: 310
-            #     3m  : y: 346
-            #     2m  : y: 416
-            return self.detect_result.detected_y > 346;
+
+            return self.detect_result.detected_y > 360;
         
         
     def __init__( self ):
         rospy.loginfo( "Mickey initialized " )
         
         init_arguments( self )
-        
-        self.state = self.STATE_INIT_ARM()
+
+        if True == self.is_simulation:
+            self.emergency_stop = False
+            self.state = self.STATE_INIT_ARM()
+        else:
+            self.emergency_stop = True
+            self.state = self.STATE_SCAN() # TODO: Use STATE_INIT_ARM when it will work
 
         self.move_publisher = rospy.Publisher('/pluto/movement/command', String, queue_size=10)
         rospy.Subscriber("/pluto/movement/done", String, self.move_done )
@@ -140,7 +144,7 @@ class Mickey:
         rospy.Subscriber("/pluto/detect/result", DetectResult, self.detect_result )
         
         self.arm_move_publisher = rospy.Publisher('/pluto/move_arm/command', String, queue_size=10)
-        rospy.Subscriber('/pluto/move_arm/done', String, self.move_done)
+        rospy.Subscriber('/pluto/move_arm/done', String, self.arm_move_done)
         
         rospy.Subscriber( "/pluto/emergency_stop", Bool, self.emergency_stop_cb)
         self.emergency_stop_publisher = rospy.Publisher('/pluto/emergency_stop', Bool, queue_size=10)
@@ -153,15 +157,17 @@ class Mickey:
             self.main_loop()
 
     def calculate_turns_needed( self, x, y, r ):
-
         return ( x // self.DETECTOR_DISCRETE_TURN_PIXELS() ) - ( self.DETECTOR_IMAGE_WIDTH() // self.DETECTOR_DISCRETE_TURN_PIXELS() // 2 )
         
+    def arm_move_done( self, done_message ):
+        done_message_str = done_message.data
+        rospy.loginfo( "Mickey arm_move_done: " + done_message_str )
+        
+        self.main_loop()
+    
     def move_done( self, done_message ):
         done_message_str = done_message.data
-        rospy.loginfo( "Mickey " + done_message_str )
-        
-        if done_message_str == "arm_init_done":
-	    self.state = self.STATE_INIT_ARM_CALLBACK()
+        rospy.loginfo( "Mickey move_done: " + done_message_str )
         
         self.main_loop()
         
@@ -188,10 +194,8 @@ class Mickey:
             rospy.loginfo( "Mickey STATE_INIT_ARM " )
             
             self.arm_move_publisher.publish("INIT")
-            #self.state = self.STATE_INIT_ARM_CALLBACK()
-            
-            #self.main_loop()
-            
+            self.state = self.STATE_INIT_ARM_CALLBACK()
+ 
         elif self.STATE_INIT_ARM_CALLBACK() == self.state:
             
             rospy.loginfo( "Mickey STATE_INIT_ARM_CALLBACK " )
@@ -206,8 +210,10 @@ class Mickey:
             
             self.state = self.STATE_SCAN_DETECT_CALLBACK()
             
-            self.detect_publisher.publish("scan_top")
-
+            if True == self.is_using_top_camera:
+                self.detect_publisher.publish("scan_top")
+            else: 
+                self.detect_publisher.publish("scan_arm")
 
         elif self.STATE_SCAN_DETECT_CALLBACK() == self.state:
             

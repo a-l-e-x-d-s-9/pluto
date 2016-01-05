@@ -23,7 +23,7 @@ def find_the_ball( image_cv, min_radius = 2, max_radius = 100, canny_higher_thre
         cv2.imshow( "red_hue_image", red_hue_image )
         cv2.waitKey()
     
-    red_hue_range_blured = cv2.GaussianBlur(red_hue_image, (11, 11), 2, 2);
+    red_hue_range_blured = cv2.GaussianBlur(red_hue_image, (9, 9), 2, 2);
     
     print( image_height/8, canny_higher_threshold, canny_accumulator_threshold, min_radius, max_radius )
 
@@ -71,11 +71,10 @@ def find_the_ball( image_cv, min_radius = 2, max_radius = 100, canny_higher_thre
         max_circle  = circles[0][0] 
         
         for circle in circles[0,:]:
+            print circle
             if circle[2] > max_r:
                 max_r       = circle[2]
                 max_circle  = circle
-        
-        print max_circle
 
         if True == debug:
             # draw the outer circle
@@ -91,8 +90,8 @@ def find_the_ball( image_cv, min_radius = 2, max_radius = 100, canny_higher_thre
     return is_ball_found, center_coordinates_and_radius
         
 
-bgr_image = cv2.imread('/home/alexds9/image_g1.png',1)
-is_ball_found, center_coordinates_and_radius = find_the_ball( bgr_image, min_radius = 1, max_radius = 100, canny_higher_threshold = 100, canny_accumulator_threshold = 4, debug = True )
+bgr_image = cv2.imread('/home/alexds9/Desktop/image_sim.png',1)
+is_ball_found, center_coordinates_and_radius = find_the_ball( bgr_image, min_radius = 2, max_radius = 125, canny_higher_threshold = 200, canny_accumulator_threshold = 2, debug = True )
 
 print is_ball_found
 print center_coordinates_and_radius

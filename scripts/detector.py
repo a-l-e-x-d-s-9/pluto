@@ -57,7 +57,13 @@ class Detector:
         init_arguments( self )
         
         rospy.Subscriber( pluto_add_namespace( self.is_simulation, "/Asus_Camera/rgb/image_raw"     ), Image, self.top_camera_listener_cb)
-        rospy.Subscriber( pluto_add_namespace( self.is_simulation, "/Creative_Camera/rgb/image_raw" ), Image, self.arm_camera_listener_cb)
+        
+        if True == self.is_simulation:
+            arm_camera_topic = "/Creative_Camera/rgb/image_raw"
+        else:
+            arm_camera_topic = "/arm_cam_node/image_raw"
+        
+        rospy.Subscriber( pluto_add_namespace( self.is_simulation, arm_camera_topic ), Image, self.arm_camera_listener_cb)
         
         rospy.Subscriber("/pluto/detect/command", String, self.get_ready_detect_ball )
         self.detect_result_publisher = rospy.Publisher('/pluto/detect/result', DetectResult, queue_size=10 )
@@ -128,7 +134,7 @@ class Detector:
             cv2.imshow( "red_hue_image", red_hue_image )
             cv2.waitKey()
         
-        red_hue_range_blured = cv2.GaussianBlur(red_hue_image, (11, 11), 2, 2);
+        red_hue_range_blured = cv2.GaussianBlur(red_hue_image, (9, 9), 2, 2);
         
         print( image_height/8, canny_higher_threshold, canny_accumulator_threshold, min_radius, max_radius )
 
@@ -210,28 +216,31 @@ class Detector:
         if "scan_top" == detect_result.request_tag:
             working_image_cv = self.top_camera_image_cv
             
-            canny_higher_threshold          = 100
+            
             max_radius                      = 25
             
             if True == self.is_simulation:
                 min_radius                  = 1
-                canny_accumulator_threshold = 4
+                canny_accumulator_threshold = 2
+                canny_higher_threshold      = 100
             else:
                 min_radius                  = 2
                 canny_accumulator_threshold = 12
+                canny_higher_threshold      = 200
             
         elif "scan_arm" == detect_result.request_tag:
             working_image_cv = self.arm_camera_image_cv
             
-            canny_higher_threshold          = 100
-            max_radius                      = 100
+            max_radius                      = 150
             
             if True == self.is_simulation:
                 min_radius                  = 3
-                canny_accumulator_threshold = 4
+                canny_accumulator_threshold = 2
+                canny_higher_threshold      = 100
             else:
                 min_radius                  = 3
                 canny_accumulator_threshold = 12
+                canny_higher_threshold      = 200
             
         else:
             raise Exception('Unsupported command to detector, support only: \"scan_top\" or \"scan_arm\".')
