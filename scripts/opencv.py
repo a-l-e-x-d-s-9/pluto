@@ -25,7 +25,7 @@ def find_the_ball( image_cv, min_radius = 2, max_radius = 100, canny_higher_thre
     
     red_hue_range_blured = cv2.GaussianBlur(red_hue_image, (9, 9), 2, 2);
     
-    print( image_height/8, canny_higher_threshold, canny_accumulator_threshold, min_radius, max_radius )
+    # print( image_height/8, canny_higher_threshold, canny_accumulator_threshold, min_radius, max_radius )
 
     # http://docs.opencv.org/2.4/modules/imgproc/doc/feature_detection.html?highlight=houghcircles#houghcircles
     '''
@@ -71,7 +71,9 @@ def find_the_ball( image_cv, min_radius = 2, max_radius = 100, canny_higher_thre
         max_circle  = circles[0][0] 
         
         for circle in circles[0,:]:
-            print circle
+            if True == debug:
+                print circle
+                
             if circle[2] > max_r:
                 max_r       = circle[2]
                 max_circle  = circle
@@ -89,9 +91,61 @@ def find_the_ball( image_cv, min_radius = 2, max_radius = 100, canny_higher_thre
         
     return is_ball_found, center_coordinates_and_radius
         
+# /home/alexds9/pluto_backups/pictures/top/with_ball    4
+# /home/alexds9/pluto_backups/pictures/top/no_ball      7
+# /home/alexds9/pluto_backups/pictures/arm/with_ball    9
+# /home/alexds9/pluto_backups/pictures/arm/no_ball      1
 
-bgr_image = cv2.imread('/home/alexds9/Desktop/image_sim.png',1)
-is_ball_found, center_coordinates_and_radius = find_the_ball( bgr_image, min_radius = 2, max_radius = 125, canny_higher_threshold = 200, canny_accumulator_threshold = 2, debug = True )
+data_with_ball = [ ["/home/alexds9/pluto_backups/pictures/top/with_ball", 4, True  ], 
+                   ["/home/alexds9/pluto_backups/pictures/arm/with_ball", 9, False ] ]
+                   
+data_no_ball   = [ ["/home/alexds9/pluto_backups/pictures/top/no_ball", 7, True  ], 
+                   ["/home/alexds9/pluto_backups/pictures/arm/no_ball", 1, False ] ]
 
-print is_ball_found
-print center_coordinates_and_radius
+def test_data_array( data, desired_result ):
+    for folder_and_amount in data:
+        [ folder, amount, is_top ] = folder_and_amount
+        for i in range(1,amount + 1):
+            file_path = folder + "/image_" + str(i) + ".png"
+            bgr_image = cv2.imread(file_path,1)
+            
+            if True == is_top:
+                min_radius                  = 2
+                max_radius                  = 25
+                canny_higher_threshold      = 200
+                canny_accumulator_threshold = 12
+                
+            else:
+                min_radius                  = 3
+                max_radius                  = 150
+                canny_higher_threshold      = 200
+                canny_accumulator_threshold = 12
+                
+                
+            
+            debug = False
+                
+            is_ball_found, center_coordinates_and_radius = find_the_ball( bgr_image, min_radius = min_radius, max_radius = max_radius, canny_higher_threshold = canny_higher_threshold, canny_accumulator_threshold = canny_accumulator_threshold, debug = debug )
+    
+            if is_ball_found != desired_result:
+                print "Not matching desired value: " + file_path
+            else:
+                # print "OK: " + file_path
+                pass
+            
+def test_all_data():
+    test_data_array( data_with_ball, True  )
+    test_data_array( data_no_ball,   False )
+    
+test_all_data()
+'''
+min_radius                  = 2
+max_radius                  = 25
+canny_higher_threshold      = 200
+canny_accumulator_threshold = 12
+
+bgr_image = cv2.imread('/home/alexds9/pluto_backups/pictures/top/no_ball/image_7.png',1)
+is_ball_found, center_coordinates_and_radius = find_the_ball( bgr_image, min_radius = min_radius, max_radius = max_radius, canny_higher_threshold = canny_higher_threshold, canny_accumulator_threshold = canny_accumulator_threshold, debug = True )
+'''
+#print is_ball_found
+#print center_coordinates_and_radius

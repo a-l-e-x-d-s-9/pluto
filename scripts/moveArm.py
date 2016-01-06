@@ -5,72 +5,140 @@ import rospy
 import moveit_commander
 import moveit_msgs.msg
 import geometry_msgs.msg
-
-from std_msgs.msg import String
+import time
+from std_msgs.msg import String, Float64
+from pluto_common import *
+from control_msgs.msg import JointControllerState
 
 class MoveArm:
-    move_command = 0
-    arm_group = 0
+    move_command            = 0
+    arm_group               = 0
+    is_simulation           = False
+    target_base             = 0
+    target_shoulder         = 0
+    target_elbow1           = 0
+    target_elbow2           = 0
+    last_target_base        = 0
+    last_target_shoulder    = 0
+    last_target_elbow1      = 0
+    last_target_elbow2      = 0
+    completion_message      = ""
     
     def MOVE_INIT( self ):
-	  return "INIT"
+        return "INIT"
+        
+    def INIT_ARM_SCAN( self ):
+        return "INIT_ARM_SCAN"
+        
+    def TARGET_IGNORE_VALUE( self ):
+        return 21.0
     
     #command_to_robot = 0
     def __init__( self ):
-	  rospy.loginfo( "Arm Movement initialized " )
-	  
-	  moveit_commander.roscpp_initialize(sys.argv)
-	  self.arm_group = moveit_commander.MoveGroupCommander("arm")
-	  #self.move_command = self.MOVE_STOP()
-
-	  #self.command_to_robot = rospy.Publisher('/diff_driver/command', Twist, queue_size=10)
-	  
-	  rospy.Subscriber("/pluto/move_arm/command", String, self.move_arm )
-	  self.move_result_publisher = rospy.Publisher('/pluto/move_arm/done', String, queue_size=10)
+        rospy.loginfo( "Arm Movement initialized " )
+          
+        init_arguments( self )  
+        
+        rospy.Subscriber("/pluto/move_arm/command", String, self.move_arm )
+        self.move_result_publisher = rospy.Publisher('/pluto/move_arm/done', String, queue_size=10)
+        
+        self.target_base     = self.TARGET_IGNORE_VALUE()
+        self.target_shoulder = self.TARGET_IGNORE_VALUE()
+        self.target_elbow1   = self.TARGET_IGNORE_VALUE()
+        self.target_elbow2   = self.TARGET_IGNORE_VALUE()
+        
+        self.base_command       = rospy.Publisher( pluto_add_namespace( self.is_simulation, '/base_rotation/command'        ), Float64, queue_size=10)
+        self.shoulder_command   = rospy.Publisher( pluto_add_namespace( self.is_simulation, '/shoulder_controller/command'  ), Float64, queue_size=10)
+        self.elbow1_command     = rospy.Publisher( pluto_add_namespace( self.is_simulation, '/elbow1_controller/command'    ), Float64, queue_size=10)
+        self.elbow2_command     = rospy.Publisher( pluto_add_namespace( self.is_simulation, '/elbow2_controller/command'    ), Float64, queue_size=10)
+        
+        rospy.Subscriber( pluto_add_namespace( self.is_simulation, '/base_rotation_controller/state'         ), JointControllerState, self.validate_state_base_rotation        )
+        rospy.Subscriber( pluto_add_namespace( self.is_simulation, '/shoulder_controller/state'   ), JointControllerState, self.validate_state_shoulder_controller  )
+        rospy.Subscriber( pluto_add_namespace( self.is_simulation, '/elbow1_controller/state'     ), JointControllerState, self.validate_state_elbow1_controller    )
+        rospy.Subscriber( pluto_add_namespace( self.is_simulation, '/elbow2_controller/state'     ), JointControllerState, self.validate_state_elbow2_controller    )
     
     def move_arm( self, command):
-	  self.move_command = command.data
-      
-	  if self.move_command == self.MOVE_INIT():
-	
-	      rospy.loginfo("Arm Movement: INIT")
-	      self.init_arm_pos()
-	      rospy.sleep(15)
-	      self.move_joints()
-	      rospy.sleep(5)
-	      self.move_result_publisher.publish( "arm_init_done" )
-      
-      
-    def init_arm_pos(self):
-	pose_target = geometry_msgs.msg.Pose()
+        self.move_command = command.data
+  
+        if self.move_command == self.MOVE_INIT():
+            self.init_arm_pos()
+            #time.sleep(10)
+            #self.move_result_publisher.publish("init_arm_done")
+        elif self.move_command == self.INIT_ARM_SCAN():
+            self.init_arm_scan()
+            
+        rospy.loginfo("Arm Movement: "+str(self.move_command))
+            #time.sleep(10)
+            #self.move_result_publisher.publish("init_arm_scan_done")
+
+        
+    def send_commands_to_arm( self, base, shoulder, elbow1, elbow2 ):
+        self.target_base            = base
+        self.last_target_base       = base
+        self.target_shoulder        = shoulder
+        self.last_target_shoulder   = shoulder
+        self.target_elbow1          = elbow1
+        self.last_target_elbow1     = elbow1
+        self.target_elbow2          = elbow2
+        self.last_target_elbow2     = elbow2
+        
+        
+    def validate_state_generic( self, current_state, target_value, publisher ):
+        if target_value != self.TARGET_IGNORE_VALUE():
+            
+            if True == self.is_simulation:
+                current_state_value = current_state.process_value
+            else:
+                current_state_value = current_state.current_pos
+                
+            #current_state_error = current_state.error
+            error_value = 0.1
+                
+            is_close_to_target = abs(target_value - current_state_value) <= error_value
+        
+            if True == is_close_to_target:
+                rospy.loginfo( "close_to_target, target_value {}, current_state_value {}, abs {}, err {}".format(target_value, current_state_value, abs(target_value - current_state_value) , error_value) )
+                target_value = self.TARGET_IGNORE_VALUE()
+            else:
+               publisher.publish( target_value )
+                
+        return target_value
+                
+    def check_arm_move_done_and_publish( self ):
+        if self.completion_message != "":
+            is_done = ( self.target_base       == self.TARGET_IGNORE_VALUE() ) and \
+                      ( self.target_shoulder   == self.TARGET_IGNORE_VALUE() ) and \
+                      ( self.target_elbow1     == self.TARGET_IGNORE_VALUE() ) and \
+                      ( self.target_elbow2     == self.TARGET_IGNORE_VALUE() ) 
+                      
+            if True == is_done:
+                self.move_result_publisher.publish( self.completion_message )
+                self.completion_message = ""
     
-	#position
-	pose_target.position.x = 0.74;
-	pose_target.position.y = 0.0;
-	#height of the arm
-	pose_target.position.z = 0.3;
-	#orientation
-	pose_target.orientation.x = 0.0;
-	pose_target.orientation.y = 0.01;
-	pose_target.orientation.z = 0.2;
-	pose_target.orientation.w = 0.1;
-	
-	self.arm_group.set_pose_target(pose_target)
-	self.arm_group.set_goal_tolerance(0.31);
-	plan1 = self.arm_group.plan()
-	#move robot arm
-	self.arm_group.go(wait=True)
-	
-    def move_joints(self):
-      self.arm_group.clear_pose_targets()
-      group_variable_values = self.arm_group.get_current_joint_values()
-      print "============ Joint values: ", group_variable_values
-      
-      group_variable_values[3] = 1.5
-      #group_variable_values[1] = 1.5
-      self.arm_group.set_joint_value_target(group_variable_values)
-      plan2 = self.arm_group.plan()
-      self.arm_group.go(wait=True) 
+    def validate_state_base_rotation( self, state ):
+        self.target_base = self.validate_state_generic( state, self.target_base, self.base_command )
+        self.check_arm_move_done_and_publish()
+                
+    def validate_state_shoulder_controller( self, state ):
+        self.target_shoulder = self.validate_state_generic( state, self.target_shoulder, self.shoulder_command )
+        self.check_arm_move_done_and_publish()
+        
+    def validate_state_elbow1_controller( self, state ):
+        self.target_elbow1 = self.validate_state_generic( state, self.target_elbow1, self.elbow1_command )
+        self.check_arm_move_done_and_publish()
+        
+    def validate_state_elbow2_controller( self, state ):
+        self.target_elbow2 = self.validate_state_generic( state, self.target_elbow2, self.elbow2_command )
+        self.check_arm_move_done_and_publish()
+        
+    
+    def init_arm_pos(self):
+        self.send_commands_to_arm( 0.0, 1.6, 0.0, 2.1 )
+        self.completion_message = "init_arm_done"
+
+    def init_arm_scan(self):
+        self.send_commands_to_arm( 0.0, 0.5, 0.0, 2.1 )
+        self.completion_message = "init_arm_scan_done"
     
 if __name__=='__main__':
   try:

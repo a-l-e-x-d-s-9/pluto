@@ -19,6 +19,7 @@ class Movement:
     odometry_last       = 0
     moving              = False
     move_robot_command  = 0
+    is_fine             = False
     
 
     def SAMPLE_FREQUENCY( self ):
@@ -39,34 +40,59 @@ class Movement:
     def MOVE_STOP( self ):
         return "STOP"
         
-    def SPEED_LINEAR( self ):
-        if True == self.is_simulation:
-            return 0.5
+    def MOVE_MODE_FINE( self ):
+        return "FINE"
+        
+    def speed_linear_get( self ):
+        if True == self.is_fine:
+            if True == self.is_simulation:
+                return 0.2
+            else:
+                return 0.1
         else:
-            return 0.2
+            if True == self.is_simulation:
+                return 0.5
+            else:
+                return 0.2
         
-    def SPEED_ANGULAR( self ):
-        if True == self.is_simulation:
-            return 0.5
+    def speed_angular_get( self ):
+        
+        if True == self.is_fine:
+            if True == self.is_simulation:
+                return 0.2
+            else:
+                return 0.6
         else:
-            return 0.85
+            if True == self.is_simulation:
+                return 0.5
+            else:
+                return 0.85
         
-    def EPSILON_ANGULAR( self ):
-        return 5.0
-        
-    def EPSILON_LINEAR( self ):
-        desired_distance_move_cm = 5.0
-        
-        if True == self.is_simulation:
-            desired_distance_move_cm = 5.0
+    def epsilon_angular_get( self ):
+        if True == self.is_fine:
+            return 2.0
         else:
-            desired_distance_move_cm = 10.0
+            return 5.0
+        
+    def epsilon_linear_get( self ):
+        if True == self.is_fine:
+            
+            if True == self.is_simulation:
+                desired_distance_move_cm = 1.0
+            else:
+                desired_distance_move_cm = 1.0
+                
+        else:
+            
+            if True == self.is_simulation:
+                desired_distance_move_cm = 5.0
+            else:
+                desired_distance_move_cm = 10.0
             
         distance_to_move_meter = desired_distance_move_cm / 100.0
         return distance_to_move_meter
         
     def calculate_linear_offset( self, p1, p2 ):
-        
         [x1, y1] = p1
         [x2, y2] = p2
         
@@ -122,16 +148,16 @@ class Movement:
             if ( self.MOVE_LEFT() == self.move_command ) or ( self.MOVE_RIGHT() == self.move_command ):
 
                 last_value_angle     = self.odometry_get_angle( self.odometry_last ) 
-                if self.calculate_angular_offset( last_value_angle, self.base_value_angle ) >= self.EPSILON_ANGULAR():
-                    rospy.loginfo("Movement: 1, offset {}, epsilon {}".format(self.calculate_angular_offset( last_value_angle, self.base_value_angle ), self.EPSILON_ANGULAR()))
+                if self.calculate_angular_offset( last_value_angle, self.base_value_angle ) >= self.epsilon_angular_get():
+                    rospy.loginfo("Movement: 1, offset {}, epsilon {}".format(self.calculate_angular_offset( last_value_angle, self.base_value_angle ), self.epsilon_angular_get()))
                     self.move( String( self.MOVE_STOP() ) )
                 
             elif ( self.MOVE_FORWARD() == self.move_command ) or ( self.MOVE_BACKWARD() == self.move_command ):
                 
                 last_value_x         = self.odometry_get_x( self.odometry_last )
                 last_value_y         = self.odometry_get_y( self.odometry_last )
-                if self.calculate_linear_offset( [last_value_x, last_value_y], [self.base_value_x, self.base_value_y] ) >= self.EPSILON_LINEAR():
-                    rospy.loginfo("Movement: 2, offset {}, epsilon {}".format(self.calculate_linear_offset( [last_value_x, last_value_y], [self.base_value_x, self.base_value_y] ), self.EPSILON_LINEAR()))
+                if self.calculate_linear_offset( [last_value_x, last_value_y], [self.base_value_x, self.base_value_y] ) >= self.epsilon_linear_get():
+                    rospy.loginfo("Movement: 2, offset {}, epsilon {}".format(self.calculate_linear_offset( [last_value_x, last_value_y], [self.base_value_x, self.base_value_y] ), self.epsilon_linear_get()))
                     self.move( String( self.MOVE_STOP() ) )
         
 
@@ -178,25 +204,25 @@ class Movement:
         if      self.MOVE_LEFT()      == self.move_command:
             rospy.loginfo("Movement: LEFT")
             self.moving = True
-            self.move_turn( self.SPEED_ANGULAR() )
+            self.move_turn( self.speed_angular_get() )
             
         elif    self.MOVE_RIGHT()     == self.move_command:
         
             rospy.loginfo("Movement: RIGHT")
             self.moving = True
-            self.move_turn( -self.SPEED_ANGULAR() )
+            self.move_turn( -self.speed_angular_get() )
             
         elif    self.MOVE_FORWARD()   == self.move_command:
         
             rospy.loginfo("Movement: FORWARD")
             self.moving = True
-            self.move_linear( self.SPEED_LINEAR() )
+            self.move_linear( self.speed_linear_get() )
             
         elif    self.MOVE_BACKWARD()  == self.move_command:
         
             rospy.loginfo("Movement: BACKWARD")
             self.moving = True
-            self.move_linear( -self.SPEED_LINEAR() )
+            self.move_linear( -self.speed_linear_get() )
             
         elif    self.MOVE_STOP()      == self.move_command:
         
@@ -204,7 +230,11 @@ class Movement:
             self.moving = False
             self.move_stop()
             self.move_result_publisher.publish( "move_done" )
-            # rospy.loginfo("Movement: before done")
+            
+        elif    self.MOVE_MODE_FINE() == self.move_command:
+        
+            rospy.loginfo("Movement: FINE")
+            self.is_fine = True
             
         else:
             rospy.loginfo("Movement: unknown command! \"{0}\"".format(self.move_command))
