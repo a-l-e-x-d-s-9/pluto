@@ -127,7 +127,7 @@ class Mickey:
             #     2m  : y: 336, r: 4
             #     1.5m: y: 366, r: 5
             #     1m  : y: 434, r: 6
-            return self.detect_result.detected_y > 285;
+            return self.detect_result.detected_y > 336;
         else:
             # Real robot, when camera most down
 
@@ -276,6 +276,7 @@ class Mickey:
                                 self.top_camera_detected_close_to_ball = self.is_in_close_range()
                             
                             if True == self.top_camera_detected_close_to_ball:
+                                self.move_publisher.publish("FINE")
                                 self.counter_approches_limit = 1
                                 rospy.loginfo( "Mickey top_camera_detected_close_to_ball " )
 
@@ -415,8 +416,6 @@ class Mickey:
             self.state = self.STATE_SCAN()
 
             self.is_using_top_camera = False
-            
-            self.move_publisher.publish("FINE")
             
             self.main_loop()
             
