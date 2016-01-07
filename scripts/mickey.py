@@ -171,12 +171,19 @@ class Mickey:
         offset_from_center = self.detect_result.detected_x - (self.detector_image_width() // 2)
         
         if offset_from_center < -self.detector_discrete_turn_pixels():
-            return -1
+            turn_value = -1
         elif self.detector_discrete_turn_pixels() < offset_from_center:
-            return 1
+            turn_value = 1
         else:
-            return 0
+            turn_value = 0
         
+        if ( True == self.is_simulation        ) and \
+           ( False == self.is_using_top_camera ):
+            turn_value = -turn_value
+        
+        rospy.loginfo( "calculate_turns_needed, x: {}, width: {}, oofeset: {}, turn {} ".format( self.detect_result.detected_x, self.detector_image_width(), offset_from_center, turn_value ) )
+        
+        return turn_value
         
     def arm_move_done( self, done_message ):
         done_message_str = done_message.data

@@ -61,7 +61,7 @@ class Movement:
             if True == self.is_simulation:
                 return 0.2
             else:
-                return 0.6
+                return 0.75
         else:
             if True == self.is_simulation:
                 return 0.5
