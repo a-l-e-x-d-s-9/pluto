@@ -94,9 +94,9 @@ class Mickey:
     def detector_discrete_turn_pixels( self ):
         if True == self.is_using_top_camera:
             if True == self.is_simulation:
-                return 15
+                return 45
             else:
-                return 40
+                return 60
         else:
             if True == self.is_simulation:
                 return 10
@@ -129,8 +129,9 @@ class Mickey:
             #     1m  : y: 434, r: 6
             return self.detect_result.detected_y > 336;
         else:
-            # Real robot, when camera most down
-
+            # Real robot, when ball placed at 1.6 m from robot, and it placed at the bottom of the top camera.
+            # Make sure to initialize the camera to 1.6m (on the floor) ball, at bottom ot the top camera.
+            # detected_y value should be configured to ball beeing at 2.2 m distance, placed on the banch.
             return self.detect_result.detected_y > 360;
         
         
@@ -177,7 +178,7 @@ class Mickey:
         else:
             turn_value = 0
         
-        if ( True == self.is_simulation        ) and \
+        if ( False == self.is_simulation       ) and \
            ( False == self.is_using_top_camera ):
             turn_value = -turn_value
         
@@ -199,20 +200,21 @@ class Mickey:
         
     def detect_result( self, detect_result ):
         
-        # if "scan_top" == detect_result.request_tag :
-        rospy.loginfo( "Mickey detect_result " )
-        
-        self.detect_result = detect_result
-        
-        self.main_loop()
+        if self.STATE_SCAN_DETECT_CALLBACK() == self.state:
+            rospy.loginfo( "Mickey detect_result " )
+            
+            self.detect_result = detect_result
+            
+            self.main_loop()
 
 
     def is_arm_camera_scan_stop_condition( self ):
         if True == self.is_simulation:
             return self.detect_result.detected_y > 360;
         else:
+            # Ball placed at 0.5~ m distance
             # Arm camera is upside down
-            return self.detect_result.detected_y < 60;
+            return self.detect_result.detected_y < 30;
 
     
     def main_loop( self ):
@@ -393,7 +395,9 @@ class Mickey:
         elif self.STATE_ARM_PICK() == self.state:
             
             rospy.loginfo( "Mickey STATE_ARM_PICK " )
-            # TODO: Add arm related code
+            
+            self.state = self.STATE_ARM_PICK_CALLBACK()
+            self.arm_move_publisher.publish("ARM_PICK")
             
 
         elif self.STATE_ARM_PICK_CALLBACK() == self.state:

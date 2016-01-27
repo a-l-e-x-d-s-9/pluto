@@ -75,6 +75,10 @@ class MoveArm:
     def TARGET_IGNORE_VALUE( self ):
         return 21.0
     
+    def cooldown_joint_move( self ):
+        time.sleep( 0.5 )
+        pass
+    
     def __init__( self ):
         rospy.loginfo( "Arm Movement initialized " )
           
@@ -154,7 +158,7 @@ class MoveArm:
         self.is_accomplished_wrist      = False
         
         
-    def validate_state_generic( self, current_state, target_value, publisher, is_accomplished, joint_name ):
+    def validate_state_generic( self, current_state, target_value, publisher, is_accomplished, error_value ):
         if target_value != self.TARGET_IGNORE_VALUE():
             
             if False == is_accomplished:
@@ -164,16 +168,11 @@ class MoveArm:
                 else:
                     current_state_value = current_state.current_pos
                 
-                if joint_name == "shoulder":
-                    is_accomplished = abs(target_value - current_state_value) <= self.shoulder_err_value
-                else:
-                    
-                    is_accomplished = abs(target_value - current_state_value) <= self.error_value
+                is_accomplished = abs(target_value - current_state_value) <= error_value
                 
                 if True == is_accomplished:
-                    rospy.loginfo( "close_to_target: {}, target_value {}, current_state_value {}, abs {}, err {}".format(joint_name, target_value, current_state_value, abs(target_value - current_state_value) , self.error_value) )
+                    rospy.loginfo( "close_to_target: target_value {}, current_state_value {}, abs {}, err {}".format( target_value, current_state_value, abs(target_value - current_state_value) , error_value ) )
 
-                   
             publisher.publish( target_value )
             
         return is_accomplished
@@ -194,27 +193,26 @@ class MoveArm:
                     self.detect_publisher.publish("scan_arm")
     
     def validate_state_base_rotation( self, state ):
-        self.is_accomplished_base       = self.validate_state_generic( state, self.target_base, self.base_command, self.is_accomplished_base , "base")
+        self.is_accomplished_base       = self.validate_state_generic( state, self.target_base, self.base_command, self.is_accomplished_base , self.error_value )
 
         self.check_arm_move_done_and_publish()
                 
     def validate_state_shoulder_controller( self, state ):
-        self.is_accomplished_shoulder   = self.validate_state_generic( state, self.target_shoulder, self.shoulder_command, self.is_accomplished_shoulder, "shoulder" )
+        self.is_accomplished_shoulder   = self.validate_state_generic( state, self.target_shoulder, self.shoulder_command, self.is_accomplished_shoulder, self.shoulder_err_value )
         self.check_arm_move_done_and_publish() 
 
-        
     def validate_state_elbow1_controller( self, state ):
-        self.is_accomplished_elbow1     = self.validate_state_generic( state, self.target_elbow1, self.elbow1_command, self.is_accomplished_elbow1, "elbow1" )
+        self.is_accomplished_elbow1     = self.validate_state_generic( state, self.target_elbow1, self.elbow1_command, self.is_accomplished_elbow1, self.error_value )
 
         self.check_arm_move_done_and_publish()
         
     def validate_state_elbow2_controller( self, state ):
-        self.is_accomplished_elbow2     = self.validate_state_generic( state, self.target_elbow2, self.elbow2_command, self.is_accomplished_elbow2 , "elbow2")
+        self.is_accomplished_elbow2     = self.validate_state_generic( state, self.target_elbow2, self.elbow2_command, self.is_accomplished_elbow2 , self.error_value )
    
         self.check_arm_move_done_and_publish()
         
     def validate_state_wrist_controller( self, state ):
-        self.is_accomplished_wrist      = self.validate_state_generic( state, self.target_wrist, self.wrist_command, self.is_accomplished_wrist , "wrist")
+        self.is_accomplished_wrist      = self.validate_state_generic( state, self.target_wrist, self.wrist_command, self.is_accomplished_wrist , self.error_value )
         self.check_arm_move_done_and_publish()
         
     
@@ -223,7 +221,7 @@ class MoveArm:
         self.completion_message = "init_arm_done"
 
     def init_arm_scan(self):
-        self.send_commands_to_arm( 0.0, 0.5, 0.0, 2.1, 0.0 )
+        self.send_commands_to_arm( 0.15, 0.25, 0.0, 2.1, 0.0 )
         self.completion_message = "init_arm_scan_done"
         
     def move_base(self, begin_step, end_step, radius):
@@ -279,6 +277,7 @@ class MoveArm:
         
     #move joints to get closer to ball
     def move_joint(self, joint_name, direction):
+        is_can_move_farther_at_this_direction = True
         
         if joint_name == "base":
             #start with larger steps
@@ -300,7 +299,10 @@ class MoveArm:
             if direction == "up":
                 self.move_elbow2(-begin_step, -end_step, radius)
             else:
-                self.move_elbow2(begin_step, end_step, radius)
+                if (self.target_elbow2 + begin_step) < 2.1:
+                    self.move_elbow2(begin_step, end_step, radius)
+                else:
+                    is_can_move_farther_at_this_direction = False
                 
         elif joint_name == "shoulder":
             begin_step = 0.1
@@ -309,7 +311,9 @@ class MoveArm:
             
             self.move_shoulder(begin_step, end_step, radius)
         
-        time.sleep(0.5)
+        self.cooldown_joint_move()
+        
+        return is_can_move_farther_at_this_direction
         
         
     def get_arm_close_to_ball(self):
@@ -349,7 +353,13 @@ class MoveArm:
                 rospy.loginfo( "STATE_MOVE_ELBOW: detected_Y {}  middle_y_range_top {}  middle_y_range_bot {}".format(self.detect_result.detected_y, middle_y_range_top, middle_y_range_bot)) 
                 joint_name = "elbow2"
                 if self.detect_result.detected_y <  middle_y_range_bot:
-                    self.move_joint(joint_name, "down")
+                    
+                    is_can_move_farther_at_this_direction = self.move_joint(joint_name, "down")
+                    if False == is_can_move_farther_at_this_direction:
+                        self.state = self.STATE_MOVE_SHOULDER()
+                    
+                        self.get_arm_close_to_ball()
+                    
                  
                 elif self.detect_result.detected_y >  middle_y_range_top:
                     self.move_joint(joint_name, "up")
