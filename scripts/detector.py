@@ -115,13 +115,17 @@ class Detector:
                 self.request_pending = False
                 self.detect_ball()
 
-    def find_the_ball( self, image_cv, min_radius = 2, max_radius = 100, canny_higher_threshold = 100, canny_accumulator_threshold = 4, debug = False ):
+    def find_the_ball( self, image_cv, min_radius = 2, max_radius = 100, canny_higher_threshold = 100, canny_accumulator_threshold = 4, debug = False, hide_top_pixels = 0 ):
         # return: 
         #           1) is_ball_found - boolean 
         #           2) center_coordinates_and_radius - tuple (x,y,r)
         # Algorithm: https://solarianprogrammer.com/2015/05/08/detect-red-circles-image-using-opencv/
         
         image_height, image_width = image_cv.shape[:2]
+        
+        if hide_top_pixels > 0:
+            # cv2.rectangle(img, pt1, pt2, color[, thickness[, lineType[, shift]]]) -> None
+            cv2.rectangle( image_cv, (0,0), (image_width,hide_top_pixels), (0,0,0), -1 )
 
         hsv_image = cv2.cvtColor( image_cv, cv2.COLOR_BGR2HSV );
 
@@ -218,6 +222,7 @@ class Detector:
             
             
             max_radius                      = 25
+            hide_top_pixels                 = 190
             
             if True == self.is_simulation:
                 min_radius                  = 1
@@ -232,6 +237,7 @@ class Detector:
             working_image_cv = self.arm_camera_image_cv
             
             max_radius                      = 150
+            hide_top_pixels                 = 0
             
             if True == self.is_simulation:
                 min_radius                  = 3
@@ -254,7 +260,7 @@ class Detector:
             process_image = ( image_width == self.detector_image_width() ) and ( image_height == self.detector_image_height() )
             
             if True == process_image:
-                is_ball_found, center_coordinates_and_radius = self.find_the_ball( working_image_cv, min_radius = min_radius, max_radius = max_radius, canny_higher_threshold = canny_higher_threshold, canny_accumulator_threshold = canny_accumulator_threshold, debug = False )
+                is_ball_found, center_coordinates_and_radius = self.find_the_ball( working_image_cv, min_radius = min_radius, max_radius = max_radius, canny_higher_threshold = canny_higher_threshold, canny_accumulator_threshold = canny_accumulator_threshold, debug = False, hide_top_pixels = hide_top_pixels )
                 
                 detect_result.is_ball_detected = is_ball_found
                 

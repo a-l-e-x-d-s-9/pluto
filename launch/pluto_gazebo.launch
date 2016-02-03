@@ -41,6 +41,7 @@
   </include>
   
 
+  <node name="gripper"  pkg="pluto" type="grab.py"     args="--is_simulation" respawn="true" />
   <node name="move_arm" pkg="pluto" type="moveArm.py"  args="--is_simulation" respawn="true" /> 
   <node name="movement" pkg="pluto" type="movement.py" args="--is_simulation" respawn="true" />
   <node name="detector" pkg="pluto" type="detector.py" args="--is_simulation" respawn="true" />

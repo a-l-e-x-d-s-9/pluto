@@ -2,6 +2,7 @@
 
 import roslib
 import rospy
+from sensor_msgs.msg import LaserScan, Range
 from std_msgs.msg import String, Bool
 from pluto.msg import DetectResult
 import time
@@ -24,6 +25,20 @@ class Mickey:
     emergency_stop                      = True
     emergency_stop_enforced             = False
     is_using_top_camera                 = True
+    
+    obstacle_found_left                 = False
+    obstacle_found_right                = False
+    obstacle_found_front                = False
+    obstacle_first                      = True
+    
+    def OBSTACLE_DANGER_M_SIDE( self ):
+        return 0.5
+        
+    def OBSTACLE_DANGER_M_FRONT_FAR( self ):
+        return 1.1
+        
+    def OBSTACLE_DANGER_M_FRONT_CLOSE( self ):
+        return 0.25
     
     def RATE( self ):
         return 5
@@ -118,6 +133,36 @@ class Mickey:
         #time.sleep( 0.5 )
         pass
         
+    def obstacle_is_clear_all( self ):
+        return ( False == self.obstacle_found_left    ) and \
+               ( False == self.obstacle_found_right   ) and \
+               ( False == self.obstacle_found_front   )
+        
+    def obstacle_detection_left( self, proximity ):
+        self.obstacle_found_left = ( proximity.range <= self.OBSTACLE_DANGER_M_SIDE() )
+        
+        if ( True == self.obstacle_found_left ) and ( True == self.obstacle_first ):
+            rospy.loginfo( "Obstacle detected on left, in {} m <= {} m.".format( proximity.range, self.OBSTACLE_DANGER_M_SIDE() ) )
+        
+    def obstacle_detection_right( self, proximity ):
+        self.obstacle_found_right = ( proximity.range <= self.OBSTACLE_DANGER_M_SIDE() )
+        
+        if ( True == self.obstacle_found_right ) and ( True == self.obstacle_first ):
+            rospy.loginfo( "Obstacle detected on right, in {} m <= {} m.".format( proximity.range, self.OBSTACLE_DANGER_M_SIDE() ) )
+        
+    def obstacle_detection_front( self, laser_scan ):
+        distance_to_obstacle = min( laser_scan.ranges )
+
+        if True == self.is_using_top_camera:
+            danger_distance = self.OBSTACLE_DANGER_M_FRONT_FAR()
+        else: 
+            danger_distance = self.OBSTACLE_DANGER_M_FRONT_CLOSE()
+            
+        self.obstacle_found_front = ( distance_to_obstacle <= danger_distance )
+        
+        if ( True == self.obstacle_found_front ) and ( True == self.obstacle_first ):
+            rospy.loginfo( "Obstacle detected on front, in {} m <= {} m.".format( distance_to_obstacle, danger_distance ) )
+        
     def is_in_close_range( self ):
 
         if True == self.is_simulation:
@@ -131,7 +176,7 @@ class Mickey:
         else:
             # Real robot, when ball placed at 1.6 m from robot, and it placed at the bottom of the top camera.
             # Make sure to initialize the camera to 1.6m (on the floor) ball, at bottom ot the top camera.
-            # detected_y value should be configured to ball beeing at 2.2 m distance, placed on the banch.
+            # detected_y value should be configured to ball beeing at 2.2 m distance, placed on the bench.
             return self.detect_result.detected_y > 360;
         
         
@@ -159,6 +204,11 @@ class Mickey:
         rospy.Subscriber( "/pluto/emergency_stop", Bool, self.emergency_stop_cb)
         self.emergency_stop_publisher = rospy.Publisher('/pluto/emergency_stop', Bool, queue_size=10)
         self.emergency_stop_publisher.publish( self.emergency_stop )
+        
+        if False == self.is_simulation:
+            rospy.Subscriber( pluto_add_namespace( self.is_simulation, "/left_urf"    ), Range,       self.obstacle_detection_left  )
+            rospy.Subscriber( pluto_add_namespace( self.is_simulation, "/right_urf"   ), Range,       self.obstacle_detection_right )
+            rospy.Subscriber( pluto_add_namespace( self.is_simulation, "/scan"        ), LaserScan,   self.obstacle_detection_front )
 
     def emergency_stop_cb( self, emergency_stop ):
         self.emergency_stop = emergency_stop.data
@@ -224,6 +274,13 @@ class Mickey:
         if True == self.emergency_stop:
             self.emergency_stop_enforced = True
             return
+            
+        while False == self.obstacle_is_clear_all():
+            if True == self.obstacle_first:
+                rospy.loginfo( "Obstacle detected, please clear the way." )
+                self.obstacle_first = False
+                
+        self.obstacle_first = True
         
         if self.STATE_INIT_ARM() == self.state:
             

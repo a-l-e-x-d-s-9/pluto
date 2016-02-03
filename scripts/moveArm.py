@@ -217,7 +217,7 @@ class MoveArm:
         
     
     def init_arm_pos(self):
-        self.send_commands_to_arm( 0.0, 1.6, 0.0, 2.1, 0.0 )
+        self.send_commands_to_arm( 0.0, 1.6, 0.0, 0.2, 0.0 )
         self.completion_message = "init_arm_done"
 
     def init_arm_scan(self):
